@@ -47,7 +47,7 @@ function Mass() {
   self.position = {x: 0, y: 0};
   self.force = {x: 0, y: 0};
   self.mass = 100;
-  self.friction = 0.01;
+  self.friction = 0.02;
 
   self.reactToVelocity = function () {
     // set position based on velocity
@@ -59,7 +59,7 @@ function Mass() {
   self.reactToForce = function() {
     // set velocity and position based on force
     self.velocity = forXAndY(self.velocity, self.force, function(vel, force) {
-      return (vel + (force / self.mass)) * (1 - self.friction);
+      return (vel + (force / self.mass)) * (1 - (self.friction * speed));
     });
     self.reactToVelocity();
   };
