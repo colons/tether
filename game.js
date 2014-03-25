@@ -46,15 +46,24 @@ function Tether() {
   return true;
 }
 
-function Mass() {
+function Mass(opts) {
   // The basic object of our physics engine. An object with mass, position, velocity and forces.
   var self = this;
-  self.velocity = {x: 0, y: 0};
-  self.position = {x: 0, y: 0};
-  self.positionOnPreviousFrame = self.position;
-  self.force = {x: 0, y: 0};
-  self.mass = 100;
-  self.friction = 0.02;
+  opts = opts || {};
+
+  var defaults = {
+    velocity: {x: 0, y: 0},
+    position: {x: 0, y: 0},
+    force: {x: 0, y: 0},
+    mass: 1,
+    friction: 0
+  };
+
+  for (var attr in defaults) {
+    self[attr] = opts[attr] || defaults[attr];
+  }
+
+  positionOnPreviousFrame = self.position;
 
   document.addEventListener('poststep', function() {
     self.positionOnPreviousFrame = self.position;
@@ -80,7 +89,10 @@ function Mass() {
 
 function Ship(tether) {
   var self = this;
-  self.mass = new Mass();
+  self.mass = new Mass({
+    mass: 100,
+    friction: 0.02
+  });
 
   self.draw = function() {
     ctx.fillStyle = '#FF0000';
