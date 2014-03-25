@@ -130,6 +130,8 @@ function Mass(opts) {
       if (intersection.onLine1 && intersection.onLine2) {
         // XXX bounce
         self.velocity = {x: 0, y: 0};
+        self.position.x = intersection.x;
+        self.position.y = intersection.y;
       }
     }
   };
