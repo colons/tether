@@ -2,9 +2,13 @@
 
 var game;
 var ctx;
-var speed = 0.4;
+var gameSpeed = 0.4;
 
 /* UTILITIES */
+// XXX all this maths bullshit should be refactored into Point and Line
+// objects. I'd suggest a Vector as well, but Vector would have the same
+// interface as Point, so they may as well be the same object.
+
 function forXAndY(obj1, obj2, func) {
   return {
     x: func(obj1.x, obj2.x),
@@ -75,27 +79,6 @@ function edgesOfCanvas() {
 }
 
 /* GAME OBJECTS */
-function Tether() {
-  var self = this;
-  self.mass = new Mass();
-
-  self.draw = function() {
-    ctx.fillStyle = '#000000';
-    ctx.beginPath();
-    ctx.arc(self.mass.position.x, self.mass.position.y, 10, 0, Math.PI*2);
-    ctx.closePath();
-    ctx.fill();
-  };
-
-  document.addEventListener('mousemove', function(e) {
-    if (e.target === ctx.canvas) {
-      self.mass.position = {x: e.layerX, y: e.layerY};
-    }
-  });
-
-  return true;
-}
-
 function Mass(opts) {
   // The basic object of our physics engine. A circle with mass, position, velocity and forces.
   var self = this;
@@ -139,7 +122,7 @@ function Mass(opts) {
   self.reactToVelocity = function () {
     // set position based on velocity
     self.position = forXAndY(self.position, self.velocity, function(pos, vel) {
-      return pos + (vel * speed);
+      return pos + (vel * gameSpeed);
     });
     self.collideWithWalls();
   };
@@ -147,10 +130,32 @@ function Mass(opts) {
   self.reactToForce = function() {
     // set velocity and position based on force
     self.velocity = forXAndY(self.velocity, self.force, function(vel, force) {
-      return (vel + (force / self.mass)) * (1 - (self.friction * speed));
+      var unbidden = vel + ((force * gameSpeed) / self.mass);
+      return unbidden * Math.pow((1 - self.friction), gameSpeed);
     });
     self.reactToVelocity();
   };
+
+  return true;
+}
+
+function Tether() {
+  var self = this;
+  self.mass = new Mass();
+
+  self.draw = function() {
+    ctx.fillStyle = '#000000';
+    ctx.beginPath();
+    ctx.arc(self.mass.position.x, self.mass.position.y, 10, 0, Math.PI*2);
+    ctx.closePath();
+    ctx.fill();
+  };
+
+  document.addEventListener('mousemove', function(e) {
+    if (e.target === ctx.canvas) {
+      self.mass.position = {x: e.layerX, y: e.layerY};
+    }
+  });
 
   return true;
 }
@@ -159,7 +164,7 @@ function Player(tether) {
   var self = this;
   self.mass = new Mass({
     mass: 100,
-    friction: 0.02,
+    friction: 0.005,
     walls: edgesOfCanvas()
   });
 
@@ -171,7 +176,7 @@ function Player(tether) {
     ctx.fill();
   };
 
-  self.move = function() {
+  self.step = function() {
     self.mass.force = forXAndY(tether.mass.position, self.mass.position, function(tpos, mpos) {
       return tpos - mpos;
     });
@@ -179,7 +184,7 @@ function Player(tether) {
     self.mass.reactToForce();
   };
 
-  document.addEventListener('prestep', self.move);
+  document.addEventListener('prestep', self.step);
 
   return true;
 }
@@ -197,15 +202,67 @@ function Cable(tether, player) {
   };
 }
 
+/* ENEMIES */
+function Ship(target, massOpts) {
+  var self = this;
+  self.mass = new Mass(massOpts);
+
+  self.getTargetVector = function() {
+    return forXAndY(target.mass.position, self.mass.position, function(them, us) {
+      return them - us;
+    });
+  };
+
+  self.step = function() {
+    self.mass.reactToForce();
+  };
+}
+
+function Idiot(target) {
+  // A very stupid enemy. Basically the diamond from Geometry Wars.
+  var self = this;
+  self.ship = new Ship(target, {
+    mass: 100,
+    friction: 0.6,
+    position: {x: 40, y: 40}
+  });
+
+  self.draw = function() {
+    ctx.fillStyle = '#666600';
+    ctx.beginPath();
+    ctx.arc(self.ship.mass.position.x, self.ship.mass.position.y, 10, 0, Math.PI*2);
+    ctx.closePath();
+    ctx.fill();
+  };
+
+  self.step = function() {
+    self.ship.mass.force = self.ship.getTargetVector();
+    self.ship.step();
+  };
+
+  document.addEventListener('prestep', self.step);
+}
+
+function Twitchy() {
+  // A hyperactive enemy, thrusting occasionally in the player's general direction.
+  // XXX needs implemented
+}
+
+
 function Game() {
   var self = this;
   game = self;
+
+  var enemies = [];
+
   var tether = new Tether();
   var player = new Player(tether);
   var cable = new Cable(tether, player);
 
   var preStep = new Event('prestep');
   var postStep = new Event('poststep');
+
+  var idiot = new Idiot(player);
 
   self.step = function() {
     document.dispatchEvent(preStep);
@@ -219,6 +276,8 @@ function Game() {
     cable.draw();
     tether.draw();
     player.draw();
+
+    idiot.draw();
   };
 
   return true;
