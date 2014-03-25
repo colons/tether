@@ -10,6 +10,7 @@ var gameSpeed = 0.4;
 // interface as Point, so they may as well be the same object.
 
 function forXAndY(obj1, obj2, func) {
+  // XXX set this up so you can hand it arbitrary objs
   return {
     x: func(obj1.x, obj2.x),
     y: func(obj1.y, obj2.y)
@@ -89,13 +90,18 @@ function Mass(opts) {
     velocity: {x: 0, y: 0},
     force: {x: 0, y: 0},
     mass: 1,
-    friction: 0,
+    lubricant: 1,
     radius: 0,
     walls: []
   };
 
   for (var attr in defaults) {
-    self[attr] = opts[attr] || defaults[attr];
+    var specified = opts[attr];
+    if (specified === undefined) {
+      self[attr] = defaults[attr];
+    } else {
+      self[attr] = specified;
+    }
   }
 
   self.positionOnPreviousFrame = self.position;
@@ -129,10 +135,14 @@ function Mass(opts) {
 
   self.reactToForce = function() {
     // set velocity and position based on force
-    self.velocity = forXAndY(self.velocity, self.force, function(vel, force) {
-      var unbidden = vel + ((force * gameSpeed) / self.mass);
-      return unbidden * Math.pow((1 - self.friction), gameSpeed);
+    var projectedVelocity = forXAndY(self.velocity, self.force, function(vel, force) {
+      return vel + ((force * gameSpeed) / self.mass);
     });
+
+    self.velocity = forXAndY(projectedVelocity, {x: 0, y: 0}, function(projected, _) {
+      return projected * Math.pow(self.lubricant, gameSpeed);
+    });
+
     self.reactToVelocity();
   };
 
@@ -164,7 +174,7 @@ function Player(tether) {
   var self = this;
   self.mass = new Mass({
     mass: 100,
-    friction: 0.005,
+    lubricant: 0.99,
     walls: edgesOfCanvas()
   });
 
@@ -223,7 +233,7 @@ function Idiot(target) {
   var self = this;
   self.ship = new Ship(target, {
     mass: 100,
-    friction: 0.6,
+    lubricant: 0.2,
     position: {x: 40, y: 40}
   });
 
