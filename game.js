@@ -1,3 +1,5 @@
+// XXX FUCK EVENTS
+
 var game;
 var ctx;
 var speed = 0.4;
@@ -76,7 +78,6 @@ function Mass() {
   return true;
 }
 
-
 function Ship(tether) {
   var self = this;
   self.mass = new Mass();
@@ -97,6 +98,8 @@ function Ship(tether) {
     self.mass.reactToForce();
   };
 
+  document.addEventListener('prestep', self.move);
+
   return true;
 }
 
@@ -105,7 +108,7 @@ function Cable(tether, ship) {
 
   self.draw = function() {
     ctx.beginPath();
-    ctx.strokeStyle = 'rgba(50, 50, 0, .5)';
+    ctx.strokeStyle = 'rgba(20, 20, 200, 1)';
     ctx.moveTo(tether.mass.position.x, tether.mass.position.y);
     ctx.lineTo(ship.mass.position.x, ship.mass.position.y);
     ctx.stroke();
@@ -125,16 +128,16 @@ function Game() {
 
   self.step = function() {
     document.dispatchEvent(preStep);
+    self.draw();
+    document.dispatchEvent(postStep);
+  };
 
+  self.draw = function() {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-
-    ship.move();
 
     cable.draw();
     tether.draw();
     ship.draw();
-
-    document.dispatchEvent(postStep);
   };
 
   return true;
