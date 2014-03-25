@@ -173,7 +173,7 @@ function Tether() {
 function Player(tether) {
   var self = this;
   self.mass = new Mass({
-    mass: 100,
+    mass: 50,
     lubricant: 0.99,
     walls: edgesOfCanvas()
   });
@@ -232,7 +232,7 @@ function Idiot(target) {
   // A very stupid enemy. Basically the diamond from Geometry Wars.
   var self = this;
   self.ship = new Ship(target, {
-    mass: 100,
+    mass: 30,
     lubricant: 0.2,
     position: {x: 40, y: 40}
   });
