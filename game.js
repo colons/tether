@@ -9,11 +9,17 @@ var gameSpeed = 0.4;
 // objects. I'd suggest a Vector as well, but Vector would have the same
 // interface as Point, so they may as well be the same object.
 
-function forXAndY(obj1, obj2, func) {
-  // XXX set this up so you can hand it arbitrary objs
+function forXAndY(objs, func) {
+  function getAttributeFromAllObjs(attr) {
+    var attrs = [];
+    for (var i = 0; i < objs.length; i++) {
+      attrs.push(objs[i][attr]);
+    }
+    return attrs;
+  }
   return {
-    x: func(obj1.x, obj2.x),
-    y: func(obj1.y, obj2.y)
+    x: func.apply(null, getAttributeFromAllObjs('x')),
+    y: func.apply(null, getAttributeFromAllObjs('y'))
   };
 }
 
@@ -127,7 +133,7 @@ function Mass(opts) {
 
   self.reactToVelocity = function () {
     // set position based on velocity
-    self.position = forXAndY(self.position, self.velocity, function(pos, vel) {
+    self.position = forXAndY([self.position, self.velocity], function(pos, vel) {
       return pos + (vel * gameSpeed);
     });
     self.collideWithWalls();
@@ -135,11 +141,11 @@ function Mass(opts) {
 
   self.reactToForce = function() {
     // set velocity and position based on force
-    var projectedVelocity = forXAndY(self.velocity, self.force, function(vel, force) {
+    var projectedVelocity = forXAndY([self.velocity, self.force], function(vel, force) {
       return vel + ((force * gameSpeed) / self.mass);
     });
 
-    self.velocity = forXAndY(projectedVelocity, {x: 0, y: 0}, function(projected, _) {
+    self.velocity = forXAndY([projectedVelocity], function(projected) {
       return projected * Math.pow(self.lubricant, gameSpeed);
     });
 
@@ -187,7 +193,7 @@ function Player(tether) {
   };
 
   self.step = function() {
-    self.mass.force = forXAndY(tether.mass.position, self.mass.position, function(tpos, mpos) {
+    self.mass.force = forXAndY([tether.mass.position, self.mass.position], function(tpos, mpos) {
       return tpos - mpos;
     });
 
@@ -218,7 +224,7 @@ function Ship(target, massOpts) {
   self.mass = new Mass(massOpts);
 
   self.getTargetVector = function() {
-    return forXAndY(target.mass.position, self.mass.position, function(them, us) {
+    return forXAndY([target.mass.position, self.mass.position], function(them, us) {
       return them - us;
     });
   };
