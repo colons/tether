@@ -6,6 +6,29 @@ var ctx;
 // objects. I'd suggest a Vector as well, but Vector would have the same
 // interface as Point, so they may as well be the same object.
 
+function somewhereJustOutsideTheViewport(buffer) {
+  var somewhere = {
+    x: Math.random() * ctx.canvas.width,
+    y: Math.random() * ctx.canvas.height
+  };
+
+  var edgeSeed = Math.random();
+  switch (true) {
+    case edgeSeed < 0.25:
+      somewhere.x = -buffer;
+      break;
+    case edgeSeed < 0.5:
+      somewhere.x = ctx.canvas.width + buffer;
+      break;
+    case edgeSeed < 0.75:
+      somewhere.y = -buffer;
+      break;
+    default:
+      somewhere.y = ctx.canvas.height + buffer;
+  }
+  return somewhere;
+}
+
 function forXAndY(objs, func) {
   function getAttributeFromAllObjs(attr) {
     var attrs = [];
@@ -63,6 +86,14 @@ function vectorAngle(vector) {
   return Math.atan(vector.x, vector.y);
 }
 
+function linesFromPolygon(polygon) {
+  // take a list of points [a, b, c, d] and convert it to a list of lines [[a, b], [b, c], [c, d]].
+  var polyLine = [];
+  for (var i = 1; i < polygon.length; i++) {
+    polyLine.push([polygon[i - 1], polygon[i]]);
+  }
+  return polyLine;
+}
 function lineAngle(line) {
   return vectorAngle({
     x: line[1].x - line[0].x,
@@ -89,12 +120,13 @@ function initCanvas() {
 }
 
 function edgesOfCanvas() {
-  return [
-    [{x: 0, y: 0}, {x:0, y: ctx.canvas.height}],
-    [{x:0, y: ctx.canvas.height}, {x: ctx.canvas.width, y: ctx.canvas.height}],
-    [{x: ctx.canvas.width, y: ctx.canvas.height}, {x: ctx.canvas.width, y: 0}],
-    [{x: ctx.canvas.width, y: 0}, {x: 0, y: 0}]
-  ];
+  return linesFromPolygon([
+    {x: 0, y: 0},
+    {x:0, y: ctx.canvas.height},
+    {x: ctx.canvas.width, y: ctx.canvas.height},
+    {x: ctx.canvas.width, y: 0},
+    {x: 0, y: 0}
+  ]);
 }
 
 /* GAME OBJECTS */
@@ -174,6 +206,7 @@ function Tether() {
     radius: 5
   });
   
+  self.locked = false;
   self.color = '#6666dd';
 
   self.draw = function() {
@@ -184,15 +217,17 @@ function Tether() {
     ctx.fill();
   };
 
-  self.placeAtMouse = function() {
-    self.mass.setPosition(self.lastMousePosition);
+  self.step = function() {
+    self.mass.setPosition(self.lastUnlockedMousePosition);
   };
 
   document.addEventListener('mousemove', function(e) {
-    self.lastMousePosition = {x: e.layerX, y: e.layerY};
+    if (e.target === ctx.canvas) {
+      self.lastMousePosition = {x: e.layerX, y: e.layerY};
 
-    if (game.speed === game.baseSpeed && e.target === ctx.canvas) {
-      self.placeAtMouse();
+      if (!self.locked) {
+        self.lastUnlockedMousePosition = {x: e.layerX, y: e.layerY};
+      }
     }
   });
 
@@ -238,12 +273,39 @@ function Player(tether) {
 function Cable(tether, player) {
   var self = this;
 
+  self.areaCoveredThisStep = function() {
+    // XXX need to check to see if enemies have crossed tether line on or are inside this shape
+    return [
+      tether.mass.position,
+      tether.mass.positionOnPreviousFrame,
+      player.mass.positionOnPreviousFrame,
+      player.mass.position
+    ];
+  };
+
   self.draw = function() {
     ctx.beginPath();
     ctx.strokeStyle = 'rgba(20, 20, 200, 1)';
     ctx.moveTo(tether.mass.position.x, tether.mass.position.y);
     ctx.lineTo(player.mass.position.x, player.mass.position.y);
     ctx.stroke();
+    ctx.closePath();
+
+    self.drawAreaCoveredThisStep();
+  };
+
+  self.drawAreaCoveredThisStep = function() {
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(20, 200, 20, .5)';
+    var areaCovered = self.areaCoveredThisStep();
+    ctx.moveTo(areaCovered[0].x, areaCovered[0].y);
+
+    for (var i = 1; i < areaCovered.length; i++) {
+      ctx.lineTo(areaCovered[i].x, areaCovered[i].y);
+    }
+
+    ctx.lineTo(areaCovered[0].x, areaCovered[0].y);
+    ctx.fill();
     ctx.closePath();
   };
 }
@@ -259,29 +321,6 @@ function Ship(target, massOpts) {
     });
   };
 
-  self.somewhereJustOutsideTheViewport = function(buffer) {
-    var somewhere = {
-      x: Math.random() * ctx.canvas.width,
-      y: Math.random() * ctx.canvas.height
-    };
-
-    var edgeSeed = Math.random();
-    switch (true) {
-      case edgeSeed < 0.25:
-        somewhere.x = -buffer;
-        break;
-      case edgeSeed < 0.5:
-        somewhere.x = ctx.canvas.width + buffer;
-        break;
-      case edgeSeed < 0.75:
-        somewhere.y = -buffer;
-        break;
-      default:
-        somewhere.y = ctx.canvas.height + buffer;
-    }
-    return somewhere;
-  };
-
   self.step = function() {
     self.mass.reactToForce();
   };
@@ -290,16 +329,18 @@ function Ship(target, massOpts) {
 function Idiot(target) {
   // A very stupid enemy. Basically the diamond from Geometry Wars.
   var self = this;
+  var radius = 10;
   self.ship = new Ship(target, {
     mass: 1,
     lubricant: 0.9,
-    radius: 10
+    radius: radius,
+    position: somewhereJustOutsideTheViewport(radius)
   });
 
-  self.ship.mass.position = self.ship.somewhereJustOutsideTheViewport(self.ship.mass.radius);
+  self.color = '#666600';
 
   self.draw = function() {
-    ctx.fillStyle = '#666600';
+    ctx.fillStyle = self.color;
     ctx.beginPath();
     ctx.arc(self.ship.mass.position.x, self.ship.mass.position.y, self.ship.mass.radius, 0, Math.PI*2);
     ctx.closePath();
@@ -338,6 +379,7 @@ function Game() {
 
   window.addEventListener('mousedown', function() {
     ctx.canvas.classList.add('showcursor');
+    tether.locked = false;
     self.speed = self.slowSpeed;
   });
 
@@ -346,13 +388,14 @@ function Game() {
 
     if (!self.ended) {
       ctx.canvas.classList.remove('showcursor');
-      tether.placeAtMouse();
+      tether.locked = false;
       self.speed = self.baseSpeed;
     }
   });
 
   self.step = function() {
     self.spawnEnemies();
+    tether.step();
     player.step();
 
     for (var i = 0; i < enemies.length; i++) {
@@ -402,6 +445,7 @@ function Game() {
   self.end = function() {
     ctx.canvas.classList.add('showcursor');
     self.ended = true;
+    tether.locked = true;
     self.speed = self.slowSpeed;
   };
 
