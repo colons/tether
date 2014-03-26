@@ -78,6 +78,22 @@ function getIntersection(line1, line2) {
   return result;
 }
 
+function pointInPolygon(point, polygon) {
+  var i, j;
+  var c = 0;
+  var numberOfPoints = polygon.length;
+  for (i = 0, j = numberOfPoints-1; i < numberOfPoints; j = i++) {
+    if (
+      (((polygon[i].y <= point.y) && (point.y < polygon[j].y)) || ((polygon[j].y <= point.y) && (point.y < polygon[i].y))) &&
+      (point.x < (polygon[j].x - polygon[i].x) * (point.y - polygon[i].y) / (polygon[j].y - polygon[i].y) + polygon[i].x)
+    ) {
+      c =!c;
+    }
+  }
+
+  return c;
+}
+
 function vectorMagnitude(vector) {
   return Math.pow(Math.pow(vector.x, 2) + Math.pow(vector.y, 2), 1/2);
 }
@@ -156,6 +172,10 @@ function Mass(opts) {
 
   self.positionOnPreviousFrame = self.position;
 
+  self.journeySincePreviousFrame = function() {
+    return [self.positionOnPreviousFrame, self.position];
+  };
+
   self.collideWithWalls = function () {
     for (var i = 0; i < self.walls.length; i++) {
       var wall = self.walls[i];
@@ -208,6 +228,10 @@ function Tether() {
   
   self.locked = false;
   self.color = '#6666dd';
+
+  // XXX strip out once we have proper spawning
+  self.lastMousePosition = {x: 0, y: 0};
+  self.lastUnlockedMousePosition = {x: 0, y: 0};
 
   self.draw = function() {
     ctx.fillStyle = self.color;
@@ -274,7 +298,6 @@ function Cable(tether, player) {
   var self = this;
 
   self.areaCoveredThisStep = function() {
-    // XXX need to check to see if enemies have crossed tether line on or are inside this shape
     return [
       tether.mass.position,
       tether.mass.positionOnPreviousFrame,
@@ -283,11 +306,16 @@ function Cable(tether, player) {
     ];
   };
 
+  self.line = function() {
+    return [tether.mass.position, player.mass.position];
+  };
+
   self.draw = function() {
     ctx.beginPath();
     ctx.strokeStyle = 'rgba(20, 20, 200, 1)';
-    ctx.moveTo(tether.mass.position.x, tether.mass.position.y);
-    ctx.lineTo(player.mass.position.x, player.mass.position.y);
+    var line = self.line();
+    ctx.moveTo(line[0].x, line[0].y);
+    ctx.lineTo(line[1].x, line[1].y);
     ctx.stroke();
     ctx.closePath();
 
@@ -314,6 +342,7 @@ function Cable(tether, player) {
 function Ship(target, massOpts) {
   var self = this;
   self.mass = new Mass(massOpts);
+  self.dead = false;
 
   self.getTargetVector = function() {
     return forXAndY([target.mass.position, self.mass.position], function(them, us) {
@@ -323,6 +352,10 @@ function Ship(target, massOpts) {
 
   self.step = function() {
     self.mass.reactToForce();
+  };
+
+  self.die = function() {
+    self.dead = true;
   };
 }
 
@@ -348,12 +381,22 @@ function Idiot(target) {
   };
 
   self.step = function() {
-    var targetVector = self.ship.getTargetVector();
-    targetVectorMagnitude = vectorMagnitude(targetVector);
-    self.ship.mass.force = forXAndY([targetVector], function(force) {
-      return force * (1/targetVectorMagnitude);
-    });
+    if (!self.ship.dead) {
+      var targetVector = self.ship.getTargetVector();
+      targetVectorMagnitude = vectorMagnitude(targetVector);
+      self.ship.mass.force = forXAndY([targetVector], function(force) {
+        return force * (1/targetVectorMagnitude);
+      });
+    } else {
+      self.ship.mass.force = {x: 0, y: 0};
+    }
+
     self.ship.step();
+  };
+
+  self.die = function() {
+    self.color = '#ff0000';
+    self.ship.die();
   };
 }
 
@@ -402,7 +445,11 @@ function Game() {
       enemies[i].step();
     }
 
-    self.checkForEnemyContact();
+    if (!self.ended) {
+      self.checkForCableContact();
+      self.checkForEnemyContact();
+    }
+
     self.draw();
   };
 
@@ -412,9 +459,39 @@ function Game() {
     }
   };
 
+  self.checkForCableContact = function() {
+    var cableAreaCovered = cable.areaCoveredThisStep();
+
+    for (var i = 0; i < enemies.length; i++) {
+      var enemy = enemies[i];
+      if (enemy.ship.dead) {
+        continue;
+      }
+
+      var journey = enemy.ship.mass.journeySincePreviousFrame();
+      var cableLines = linesFromPolygon(cableAreaCovered);
+
+      for (var ci = 0; ci < cableLines.length; ci++) {
+        var intersection = getIntersection(journey, cableLines[ci]);
+
+        if (intersection.onLine1 && intersection.onLine2) {
+          enemy.die();
+          break;
+        }
+      }
+
+      if (pointInPolygon(enemy.ship.mass.position, cableAreaCovered)) {
+        enemy.die();
+      }
+    }
+  };
+
   self.checkForEnemyContactWith = function(mass) {
     for (var i = 0; i < enemies.length; i++) {
       var enemy = enemies[i];
+      if (enemy.ship.dead) {
+        continue;
+      }
 
       if (
         vectorMagnitude(lineDelta([enemy.ship.mass.position, mass.position])) <
