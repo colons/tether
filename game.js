@@ -324,7 +324,7 @@ function Cable(tether, player) {
 
   self.drawAreaCoveredThisStep = function() {
     ctx.beginPath();
-    ctx.strokeStyle = 'rgba(20, 200, 20, .5)';
+    ctx.fillStyle = 'rgba(20, 200, 20, .5)';
     var areaCovered = self.areaCoveredThisStep();
     ctx.moveTo(areaCovered[0].x, areaCovered[0].y);
 
