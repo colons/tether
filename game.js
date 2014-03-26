@@ -170,12 +170,16 @@ function Mass(opts) {
 
 function Tether() {
   var self = this;
-  self.mass = new Mass();
+  self.mass = new Mass({
+    radius: 5
+  });
+  
+  self.color = '#6666dd';
 
   self.draw = function() {
-    ctx.fillStyle = '#000000';
+    ctx.fillStyle = self.color;
     ctx.beginPath();
-    ctx.arc(self.mass.position.x, self.mass.position.y, 10, 0, Math.PI*2);
+    ctx.arc(self.mass.position.x, self.mass.position.y, self.mass.radius, 0, Math.PI*2);
     ctx.closePath();
     ctx.fill();
   };
@@ -224,6 +228,7 @@ function Player(tether) {
 
   self.die = function() {
     self.color = '#ff0000';
+    tether.color = '#ff0000';
     game.end();
   };
 
@@ -364,17 +369,22 @@ function Game() {
     }
   };
 
-  self.checkForEnemyContact = function() {
+  self.checkForEnemyContactWith = function(mass) {
     for (var i = 0; i < enemies.length; i++) {
       var enemy = enemies[i];
 
       if (
-        vectorMagnitude(lineDelta([enemy.ship.mass.position, player.mass.position])) <
-        (enemy.ship.mass.radius + player.mass.radius)
+        vectorMagnitude(lineDelta([enemy.ship.mass.position, mass.position])) <
+        (enemy.ship.mass.radius + mass.radius)
       ) {
         player.die();
       }
     }
+  };
+
+  self.checkForEnemyContact = function() {
+    self.checkForEnemyContactWith(tether.mass);
+    self.checkForEnemyContactWith(player.mass);
   };
 
   self.draw = function() {
