@@ -110,10 +110,6 @@ function Mass(opts) {
 
   self.positionOnPreviousFrame = self.position;
 
-  document.addEventListener('poststep', function() {
-    self.positionOnPreviousFrame = self.position;
-  });
-
   self.collideWithWalls = function () {
     for (var i = 0; i < self.walls.length; i++) {
       var wall = self.walls[i];
@@ -129,11 +125,16 @@ function Mass(opts) {
     }
   };
 
+  self.setPosition = function(position) {
+    self.positionOnPreviousFrame = self.position;
+    self.position = position;
+  };
+
   self.reactToVelocity = function () {
     // set position based on velocity
-    self.position = forXAndY([self.position, self.velocity], function(pos, vel) {
+    self.setPosition(forXAndY([self.position, self.velocity], function(pos, vel) {
       return pos + (vel * gameSpeed);
-    });
+    }));
     self.collideWithWalls();
   };
 
@@ -167,7 +168,7 @@ function Tether() {
 
   document.addEventListener('mousemove', function(e) {
     if (e.target === ctx.canvas) {
-      self.mass.position = {x: e.layerX, y: e.layerY};
+      self.mass.setPosition({x: e.layerX, y: e.layerY});
     }
   });
 
