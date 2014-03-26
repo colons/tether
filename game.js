@@ -390,6 +390,7 @@ function Game() {
   };
 
   self.end = function() {
+    ctx.canvas.classList.add('showcursor');
     self.ended = true;
     self.speed = self.slowSpeed;
   };
