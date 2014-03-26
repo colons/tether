@@ -165,11 +165,15 @@ function Tether() {
     ctx.fill();
   };
 
+  self.placeAtMouse = function() {
+    self.mass.setPosition(self.lastMousePosition);
+  };
+
   document.addEventListener('mousemove', function(e) {
-    if (game.speed === game.baseSpeed) {
-      if (e.target === ctx.canvas) {
-        self.mass.setPosition({x: e.layerX, y: e.layerY});
-      }
+    self.lastMousePosition = {x: e.layerX, y: e.layerY};
+
+    if (game.speed === game.baseSpeed && e.target === ctx.canvas) {
+      self.placeAtMouse();
     }
   });
 
@@ -273,19 +277,6 @@ function Game() {
   self.slowSpeed = self.baseSpeed / 100;
   self.speed = self.baseSpeed;
 
-  window.addEventListener('mousedown', function() {
-    ctx.canvas.classList.add('showcursor');
-    self.speed = self.slowSpeed;
-  });
-
-  window.addEventListener('mouseup', function() {
-    // XXX do not resume until the cursor is near the tether and if it is,
-    // don't wait for mousemove to put the tether back into position
-
-    ctx.canvas.classList.remove('showcursor');
-    self.speed = self.baseSpeed;
-  });
-
   var enemies = [];
 
   var tether = new Tether();
@@ -293,6 +284,19 @@ function Game() {
   var cable = new Cable(tether, player);
 
   var idiot = new Idiot(player);
+
+  window.addEventListener('mousedown', function() {
+    ctx.canvas.classList.add('showcursor');
+    self.speed = self.slowSpeed;
+  });
+
+  window.addEventListener('mouseup', function() {
+    // XXX do not resume until the cursor is near the tether and if it is,
+
+    ctx.canvas.classList.remove('showcursor');
+    tether.placeAtMouse();
+    self.speed = self.baseSpeed;
+  });
 
   self.step = function() {
     player.step();
