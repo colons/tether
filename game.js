@@ -55,10 +55,25 @@ function getIntersection(line1, line2) {
   return result;
 }
 
-function angleOfLine(line) {
-  var x = line[1].x - line[0].x;
-  var y = line[1].y - line[0].y;
-  return Math.atan(x/y);
+function vectorMagnitude(vector) {
+  return Math.pow(Math.pow(vector.x, 2) + Math.pow(vector.y, 2), 1/2);
+}
+
+function vectorAngle(vector) {
+  return Math.atan(vector.x, vector.y);
+}
+
+function lineAngle(line) {
+  return vectorAngle({
+    x: line[1].x - line[0].x,
+    y: line[1].y - line[0].y
+  });
+}
+
+function lineDelta(line) {
+  return forXAndY(line, function(a, b) {
+    return b - a;
+  });
 }
 
 /* SETUP */
@@ -185,13 +200,16 @@ function Player(tether) {
   self.mass = new Mass({
     mass: 50,
     lubricant: 0.99,
+    radius: 10,
     walls: edgesOfCanvas()
   });
 
+  self.color = '#6666dd';
+
   self.draw = function() {
-    ctx.fillStyle = '#FF0000';
+    ctx.fillStyle = self.color;
     ctx.beginPath();
-    ctx.arc(self.mass.position.x, self.mass.position.y, 10, 0, Math.PI*2);
+    ctx.arc(self.mass.position.x, self.mass.position.y, self.mass.radius, 0, Math.PI*2);
     ctx.closePath();
     ctx.fill();
   };
@@ -202,6 +220,11 @@ function Player(tether) {
     });
 
     self.mass.reactToForce();
+  };
+
+  self.die = function() {
+    self.color = '#ff0000';
+    game.end();
   };
 
   return true;
@@ -280,7 +303,7 @@ function Idiot(target) {
 
   self.step = function() {
     var targetVector = self.ship.getTargetVector();
-    targetVectorMagnitude = Math.pow(Math.pow(targetVector.x, 2) + Math.pow(targetVector.y, 2), 1/2);
+    targetVectorMagnitude = vectorMagnitude(targetVector);
     self.ship.mass.force = forXAndY([targetVector], function(force) {
       return force * (1/targetVectorMagnitude);
     });
@@ -316,9 +339,11 @@ function Game() {
   window.addEventListener('mouseup', function() {
     // XXX do not resume until the cursor is near the tether and if it is,
 
-    ctx.canvas.classList.remove('showcursor');
-    tether.placeAtMouse();
-    self.speed = self.baseSpeed;
+    if (!self.ended) {
+      ctx.canvas.classList.remove('showcursor');
+      tether.placeAtMouse();
+      self.speed = self.baseSpeed;
+    }
   });
 
   self.step = function() {
@@ -329,12 +354,26 @@ function Game() {
       enemies[i].step();
     }
 
+    self.checkForEnemyContact();
     self.draw();
   };
 
   self.spawnEnemies = function() {
     if (Math.random() < 0.02 * game.speed) {
       enemies.push(new Idiot(player));
+    }
+  };
+
+  self.checkForEnemyContact = function() {
+    for (var i = 0; i < enemies.length; i++) {
+      var enemy = enemies[i];
+
+      if (
+        vectorMagnitude(lineDelta([enemy.ship.mass.position, player.mass.position])) <
+        (enemy.ship.mass.radius + player.mass.radius)
+      ) {
+        player.die();
+      }
     }
   };
 
@@ -348,6 +387,11 @@ function Game() {
     for (var i = 0; i < enemies.length; i++) {
       enemies[i].draw();
     }
+  };
+
+  self.end = function() {
+    self.ended = true;
+    self.speed = self.slowSpeed;
   };
 
   return true;
