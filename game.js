@@ -1,5 +1,3 @@
-// XXX FUCK EVENTS
-
 var game;
 var ctx;
 var gameSpeed = 0.4;
