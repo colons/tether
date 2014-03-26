@@ -1,6 +1,5 @@
 var game;
 var ctx;
-var gameSpeed = 0.4;
 
 /* UTILITIES */
 // XXX all this maths bullshit should be refactored into Point and Line
@@ -133,7 +132,7 @@ function Mass(opts) {
   self.reactToVelocity = function () {
     // set position based on velocity
     self.setPosition(forXAndY([self.position, self.velocity], function(pos, vel) {
-      return pos + (vel * gameSpeed);
+      return pos + (vel * game.speed);
     }));
     self.collideWithWalls();
   };
@@ -141,11 +140,11 @@ function Mass(opts) {
   self.reactToForce = function() {
     // set velocity and position based on force
     var projectedVelocity = forXAndY([self.velocity, self.force], function(vel, force) {
-      return vel + ((force * gameSpeed) / self.mass);
+      return vel + ((force * game.speed) / self.mass);
     });
 
     self.velocity = forXAndY([projectedVelocity], function(projected) {
-      return projected * Math.pow(self.lubricant, gameSpeed);
+      return projected * Math.pow(self.lubricant, game.speed);
     });
 
     self.reactToVelocity();
@@ -167,8 +166,10 @@ function Tether() {
   };
 
   document.addEventListener('mousemove', function(e) {
-    if (e.target === ctx.canvas) {
-      self.mass.setPosition({x: e.layerX, y: e.layerY});
+    if (game.speed === game.baseSpeed) {
+      if (e.target === ctx.canvas) {
+        self.mass.setPosition({x: e.layerX, y: e.layerY});
+      }
     }
   });
 
@@ -264,6 +265,23 @@ function Game() {
   var self = this;
   game = self;
 
+  self.baseSpeed = 0.4;
+  self.slowSpeed = self.baseSpeed / 100;
+  self.speed = self.baseSpeed;
+
+  window.addEventListener('mousedown', function() {
+    ctx.canvas.classList.add('showcursor');
+    self.speed = self.slowSpeed;
+  });
+
+  window.addEventListener('mouseup', function() {
+    // XXX do not resume until the cursor is near the tether and if it is,
+    // don't wait for mousemove to put the tether back into position
+
+    ctx.canvas.classList.remove('showcursor');
+    self.speed = self.baseSpeed;
+  });
+
   var enemies = [];
 
   var tether = new Tether();
@@ -293,5 +311,5 @@ function Game() {
 
 /* FIRE */
 initCanvas();
-new Game();
+game = new Game();
 setInterval(game.step, 10);
