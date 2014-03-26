@@ -242,16 +242,15 @@ function Tether() {
   };
 
   self.step = function() {
+    if (!self.locked) {
+      self.lastUnlockedMousePosition = self.lastMousePosition;
+    }
     self.mass.setPosition(self.lastUnlockedMousePosition);
   };
 
   document.addEventListener('mousemove', function(e) {
     if (e.target === ctx.canvas) {
       self.lastMousePosition = {x: e.layerX, y: e.layerY};
-
-      if (!self.locked) {
-        self.lastUnlockedMousePosition = {x: e.layerX, y: e.layerY};
-      }
     }
   });
 
@@ -422,7 +421,7 @@ function Game() {
 
   window.addEventListener('mousedown', function() {
     ctx.canvas.classList.add('showcursor');
-    tether.locked = false;
+    tether.locked = true;
     self.speed = self.slowSpeed;
   });
 
