@@ -231,6 +231,29 @@ function Ship(target, massOpts) {
     });
   };
 
+  self.somewhereJustOutsideTheViewport = function(buffer) {
+    var somewhere = {
+      x: Math.random() * ctx.canvas.width,
+      y: Math.random() * ctx.canvas.height
+    };
+
+    var edgeSeed = Math.random();
+    switch (true) {
+      case edgeSeed < 0.25:
+        somewhere.x = -buffer;
+        break;
+      case edgeSeed < 0.5:
+        somewhere.x = ctx.canvas.width + buffer;
+        break;
+      case edgeSeed < 0.75:
+        somewhere.y = -buffer;
+        break;
+      default:
+        somewhere.y = ctx.canvas.height + buffer;
+    }
+    return somewhere;
+  };
+
   self.step = function() {
     self.mass.reactToForce();
   };
@@ -242,13 +265,15 @@ function Idiot(target) {
   self.ship = new Ship(target, {
     mass: 1,
     lubricant: 0.9,
-    position: {x: 40, y: 40}
+    radius: 10
   });
+
+  self.ship.mass.position = self.ship.somewhereJustOutsideTheViewport(self.ship.mass.radius);
 
   self.draw = function() {
     ctx.fillStyle = '#666600';
     ctx.beginPath();
-    ctx.arc(self.ship.mass.position.x, self.ship.mass.position.y, 10, 0, Math.PI*2);
+    ctx.arc(self.ship.mass.position.x, self.ship.mass.position.y, self.ship.mass.radius, 0, Math.PI*2);
     ctx.closePath();
     ctx.fill();
   };
@@ -283,8 +308,6 @@ function Game() {
   var player = new Player(tether);
   var cable = new Cable(tether, player);
 
-  var idiot = new Idiot(player);
-
   window.addEventListener('mousedown', function() {
     ctx.canvas.classList.add('showcursor');
     self.speed = self.slowSpeed;
@@ -299,9 +322,20 @@ function Game() {
   });
 
   self.step = function() {
+    self.spawnEnemies();
     player.step();
-    idiot.step();
+
+    for (var i = 0; i < enemies.length; i++) {
+      enemies[i].step();
+    }
+
     self.draw();
+  };
+
+  self.spawnEnemies = function() {
+    if (Math.random() < 0.02 * game.speed) {
+      enemies.push(new Idiot(player));
+    }
   };
 
   self.draw = function() {
@@ -311,7 +345,9 @@ function Game() {
     tether.draw();
     player.draw();
 
-    idiot.draw();
+    for (var i = 0; i < enemies.length; i++) {
+      enemies[i].draw();
+    }
   };
 
   return true;
