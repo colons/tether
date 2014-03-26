@@ -236,8 +236,8 @@ function Idiot(target) {
   // A very stupid enemy. Basically the diamond from Geometry Wars.
   var self = this;
   self.ship = new Ship(target, {
-    mass: 30,
-    lubricant: 0.2,
+    mass: 1,
+    lubricant: 0.9,
     position: {x: 40, y: 40}
   });
 
@@ -250,7 +250,11 @@ function Idiot(target) {
   };
 
   self.step = function() {
-    self.ship.mass.force = self.ship.getTargetVector();
+    var targetVector = self.ship.getTargetVector();
+    targetVectorMagnitude = Math.pow(Math.pow(targetVector.x, 2) + Math.pow(targetVector.y, 2), 1/2);
+    self.ship.mass.force = forXAndY([targetVector], function(force) {
+      return force * (1/targetVectorMagnitude);
+    });
     self.ship.step();
   };
 }
