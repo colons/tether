@@ -200,8 +200,6 @@ function Player(tether) {
     self.mass.reactToForce();
   };
 
-  document.addEventListener('prestep', self.step);
-
   return true;
 }
 
@@ -255,8 +253,6 @@ function Idiot(target) {
     self.ship.mass.force = self.ship.getTargetVector();
     self.ship.step();
   };
-
-  document.addEventListener('prestep', self.step);
 }
 
 function Twitchy() {
@@ -275,15 +271,12 @@ function Game() {
   var player = new Player(tether);
   var cable = new Cable(tether, player);
 
-  var preStep = new Event('prestep');
-  var postStep = new Event('poststep');
-
   var idiot = new Idiot(player);
 
   self.step = function() {
-    document.dispatchEvent(preStep);
+    player.step();
+    idiot.step();
     self.draw();
-    document.dispatchEvent(postStep);
   };
 
   self.draw = function() {
