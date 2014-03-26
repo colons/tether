@@ -509,13 +509,13 @@ function Game() {
   self.draw = function() {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
-    cable.draw();
-    tether.draw();
-    player.draw();
-
     for (var i = 0; i < enemies.length; i++) {
       enemies[i].draw();
     }
+
+    cable.draw();
+    tether.draw();
+    player.draw();
   };
 
   self.end = function() {
