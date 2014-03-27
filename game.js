@@ -384,7 +384,7 @@ function Idiot(target) {
     } else if (game.timeElapsed < (self.ship.died + self.deathDuration)) {
       opacity = 1 - ((game.timeElapsed - self.ship.died) / self.deathDuration);
     } else {
-      opacity = 0;
+      return;
     }
 
     ctx.fillStyle = 'rgba(' + self.rgb + ',' + opacity.toString() + ')';
