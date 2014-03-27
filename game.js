@@ -451,10 +451,10 @@ function Exhaust(source) {
     return v - (f * 10) + (Math.random() - 0.5);
   });
 
-  var baseVelocityMagnitude = vectorMagnitude(baseVelocity);
+  var forceMagnitude = vectorMagnitude(source.force);
 
   this.velocity = forXAndY([baseVelocity], function(b) {
-    return b * (1 + (Math.random() - 0.5) * baseVelocityMagnitude * 0.2);
+    return b * (1 + (Math.random() - 0.5) * forceMagnitude * 2);
   });
 }
 extend(Mass, Exhaust);
