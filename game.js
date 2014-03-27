@@ -341,7 +341,7 @@ function Cable(tether, player) {
 function Ship(target, massOpts) {
   var self = this;
   self.mass = new Mass(massOpts);
-  self.dead = false;
+  self.died = null;
 
   self.getTargetVector = function() {
     return forXAndY([target.mass.position, self.mass.position], function(them, us) {
@@ -351,10 +351,13 @@ function Ship(target, massOpts) {
 
   self.step = function() {
     self.mass.reactToForce();
+    if (self.mass.velocity == {x: 0, y: 0}) {
+      self.destroy = true;
+    }
   };
 
   self.die = function() {
-    self.dead = true;
+    self.died = game.timeElapsed;
   };
 }
 
@@ -369,10 +372,22 @@ function Idiot(target) {
     position: somewhereJustOutsideTheViewport(radius)
   });
 
-  self.color = '#666600';
+  self.deathDuration = 200;
+
+  self.rgb = '100,100,0';
 
   self.draw = function() {
-    ctx.fillStyle = self.color;
+    var opacity;
+
+    if (!self.ship.died) {
+      opacity = 1;
+    } else if (game.timeElapsed < (self.ship.died + self.deathDuration)) {
+      opacity = 1 - ((game.timeElapsed - self.ship.died) / self.deathDuration);
+    } else {
+      opacity = 0;
+    }
+
+    ctx.fillStyle = 'rgba(' + self.rgb + ',' + opacity.toString() + ')';
     ctx.beginPath();
     ctx.arc(self.ship.mass.position.x, self.ship.mass.position.y, self.ship.mass.radius, 0, Math.PI*2);
     ctx.closePath();
@@ -380,7 +395,7 @@ function Idiot(target) {
   };
 
   self.step = function() {
-    if (!self.ship.dead) {
+    if (!self.ship.died) {
       var targetVector = self.ship.getTargetVector();
       targetVectorMagnitude = vectorMagnitude(targetVector);
       self.ship.mass.force = forXAndY([targetVector], function(force) {
@@ -394,7 +409,8 @@ function Idiot(target) {
   };
 
   self.die = function() {
-    self.color = '#ff0000';
+    self.rgb = '200,50,50';
+    self.ship.mass.lubricant = 0.95;
     self.ship.die();
   };
 }
@@ -409,6 +425,7 @@ function Game() {
   var self = this;
   game = self;
 
+  self.timeElapsed = 0;
   self.baseSpeed = 0.4;
   self.slowSpeed = self.baseSpeed / 100;
   self.speed = self.baseSpeed;
@@ -449,6 +466,8 @@ function Game() {
       self.checkForEnemyContact();
     }
 
+    self.timeElapsed += self.speed;
+
     self.draw();
   };
 
@@ -463,7 +482,7 @@ function Game() {
 
     for (var i = 0; i < enemies.length; i++) {
       var enemy = enemies[i];
-      if (enemy.ship.dead) {
+      if (enemy.ship.died) {
         continue;
       }
 
@@ -488,7 +507,7 @@ function Game() {
   self.checkForEnemyContactWith = function(mass) {
     for (var i = 0; i < enemies.length; i++) {
       var enemy = enemies[i];
-      if (enemy.ship.dead) {
+      if (enemy.ship.died) {
         continue;
       }
 
@@ -508,6 +527,8 @@ function Game() {
 
   self.draw = function() {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.fillStyle = '#000';
+    ctx.fillText(self.timeElapsed.toFixed(2), 6, 20);
 
     for (var i = 0; i < enemies.length; i++) {
       enemies[i].draw();
