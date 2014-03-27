@@ -285,7 +285,7 @@ Player.prototype.step = function() {
   this.force = forXAndY([this.tether.position, this.position], function(tpos, ppos) {
     return tpos - ppos;
   });
-  this.reactToForce();
+  Mass.prototype.step.call(this);
 };
 
 Player.prototype.die = function() {
@@ -385,29 +385,30 @@ function Idiot(target) {
   this.lubricant = 0.9;
   this.radius = 10;
   this.position = somewhereJustOutsideTheViewport(this.radius);
-
-  this.step = function() {
-    if (!this.died) {
-      var targetVector = this.getTargetVector();
-      targetVectorMagnitude = vectorMagnitude(targetVector);
-      this.force = forXAndY([targetVector], function(force) {
-        return force * (1/targetVectorMagnitude);
-      });
-    } else {
-      this.force = {x: 0, y: 0};
-    }
-
-    this.reactToForce();
-  };
 }
 extend(Enemy, Idiot);
 
-function Twitchy() {
-  // A hyperactive enemy, thrusting occasionally in the player's general direction.
-  // XXX needs implemented
-}
+Idiot.prototype.step = function() {
+  if (!this.died) {
+    var targetVector = this.getTargetVector();
+    targetVectorMagnitude = vectorMagnitude(targetVector);
+    this.force = forXAndY([targetVector], function(force) {
+      return force * (1/targetVectorMagnitude);
+    });
+  } else {
+    this.force = {x: 0, y: 0};
+  }
+
+  Enemy.prototype.step.call(this);
+};
 
 
+// A hyperactive enemy, thrusting occasionally in the player's general direction.
+// XXX needs implemented
+function Twitchy() {}
+
+
+/* THE GAME */
 function Game() {
   var self = this;
   game = self;
