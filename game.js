@@ -407,9 +407,11 @@ function Idiot(target) {
   // A very stupid enemy. Basically the diamond from Geometry Wars.
   Enemy.call(this, target);
 
-  this.mass = 1;
+  var size = 0.5 + Math.random();
+
+  this.mass = size;
   this.lubricant = 0.9;
-  this.radius = 10;
+  this.radius = size * 10;
   this.position = somewhereJustOutsideTheViewport(this.radius);
 }
 extend(Enemy, Idiot);
@@ -436,7 +438,7 @@ function Twitchy() {}
 
 /* EFFECTS */
 // Exhuast fired from `source`, a instance of mass. Chooses a direction to start
-// moving in based on the acceleration of the object in question.
+// moving in based on the force being exerted on the object in question.
 function Exhaust(source) {
   Mass.call(this);
   this.position = source.position;
@@ -446,7 +448,7 @@ function Exhaust(source) {
   this.created = game.timeElapsed;
 
   baseVelocity = forXAndY([source.velocity, source.force], function(v, f) {
-    return v - (f * 10 / source.mass) + (Math.random() - 0.5);
+    return v - (f * 10) + (Math.random() - 0.5);
   });
 
   var baseVelocityMagnitude = vectorMagnitude(baseVelocity);
