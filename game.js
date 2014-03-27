@@ -531,7 +531,11 @@ function Game() {
 
   self.spawnEnemies = function() {
     if (Math.random() < 0.02 * game.speed) {
-      enemies.push(new Idiot(player));
+      var target;
+      if (Math.random() > 0.5) target = player;
+      else target = tether;
+
+      enemies.push(new Idiot(target));
     }
   };
 
