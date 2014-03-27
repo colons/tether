@@ -494,22 +494,6 @@ function Game() {
   var player = new Player(tether);
   var cable = new Cable(tether, player);
 
-  window.addEventListener('mousedown', function() {
-    ctx.canvas.classList.add('showcursor');
-    tether.locked = true;
-    self.speed = self.slowSpeed;
-  });
-
-  window.addEventListener('mouseup', function() {
-    // XXX do not resume until the cursor is near the tether and if it is,
-
-    if (!self.ended) {
-      ctx.canvas.classList.remove('showcursor');
-      tether.locked = false;
-      self.speed = self.baseSpeed;
-    }
-  });
-
   self.step = function() {
     self.spawnEnemies();
     tether.step();
