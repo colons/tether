@@ -2,9 +2,18 @@ var game;
 var ctx;
 
 /* UTILITIES */
-// XXX all this maths bullshit should be refactored into Point and Line
+// All this maths bullshit should probably be refactored into Point and Line
 // objects. I'd suggest a Vector as well, but Vector would have the same
 // interface as Point, so they may as well be the same object.
+
+function extend(base, sub) {
+  sub.prototype = Object.create(base.prototype);
+  sub.prototype.constructor = sub;
+  Object.defineProperty(sub.prototype, 'constructor', {
+    enumerable: false,
+    value: sub
+  });
+}
 
 function somewhereJustOutsideTheViewport(buffer) {
   var somewhere = {
@@ -146,107 +155,83 @@ function edgesOfCanvas() {
 }
 
 /* GAME OBJECTS */
-function Mass(opts) {
-  // The basic object of our physics engine. A circle with mass, position, velocity and forces.
-  var self = this;
-  opts = opts || {};
+// The basic object of our physics engine. A circle with mass, position, velocity and forces.
+function Mass() {}
+Mass.prototype = {
+  position: {x: 0, y: 0},
+  positionOnPreviousFrame: {x: 0, y: 0},
+  velocity: {x: 0, y: 0},
+  force: {x: 0, y: 0},
+  mass: 1,
+  lubricant: 1,
+  radius: 0,
+  walls: [],
 
-  var defaults = {
-    position: {x: 0, y: 0},
-    velocity: {x: 0, y: 0},
-    force: {x: 0, y: 0},
-    mass: 1,
-    lubricant: 1,
-    radius: 0,
-    walls: []
-  };
+  journeySincePreviousFrame: function() {
+    return [this.positionOnPreviousFrame, this.position];
+  },
 
-  for (var attr in defaults) {
-    var specified = opts[attr];
-    if (specified === undefined) {
-      self[attr] = defaults[attr];
-    } else {
-      self[attr] = specified;
-    }
-  }
-
-  self.positionOnPreviousFrame = self.position;
-
-  self.journeySincePreviousFrame = function() {
-    return [self.positionOnPreviousFrame, self.position];
-  };
-
-  self.collideWithWalls = function () {
-    for (var i = 0; i < self.walls.length; i++) {
-      var wall = self.walls[i];
+  collideWithWalls: function () {
+    for (var i = 0; i < this.walls.length; i++) {
+      var wall = this.walls[i];
       // XXX move the wall towards us perpendicular to its direction by our radius
-      var intersection = getIntersection(wall, [self.positionOnPreviousFrame, self.position]);
+      var intersection = getIntersection(wall, [this.positionOnPreviousFrame, this.position]);
 
       if (intersection.onLine1 && intersection.onLine2) {
         // XXX bounce
-        self.velocity = {x: 0, y: 0};
-        self.position.x = intersection.x;
-        self.position.y = intersection.y;
+        this.velocity = {x: 0, y: 0};
+        this.position.x = intersection.x;
+        this.position.y = intersection.y;
       }
     }
-  };
+  },
 
-  self.setPosition = function(position) {
-    self.positionOnPreviousFrame = self.position;
-    self.position = position;
-  };
+  setPosition: function(position) {
+    this.positionOnPreviousFrame = this.position;
+    this.position = position;
+  },
 
-  self.reactToVelocity = function () {
+  reactToVelocity: function () {
     // set position based on velocity
-    self.setPosition(forXAndY([self.position, self.velocity], function(pos, vel) {
+    this.setPosition(forXAndY([this.position, this.velocity], function(pos, vel) {
       return pos + (vel * game.speed);
     }));
-    self.collideWithWalls();
-  };
+    this.collideWithWalls();
+  },
 
-  self.reactToForce = function() {
+  reactToForce: function() {
     // set velocity and position based on force
-    var projectedVelocity = forXAndY([self.velocity, self.force], function(vel, force) {
+    var self = this;
+    var projectedVelocity = forXAndY([this.velocity, this.force], function(vel, force) {
       return vel + ((force * game.speed) / self.mass);
     });
 
-    self.velocity = forXAndY([projectedVelocity], function(projected) {
+    this.velocity = forXAndY([projectedVelocity], function(projected) {
       return projected * Math.pow(self.lubricant, game.speed);
     });
 
-    self.reactToVelocity();
-  };
+    this.reactToVelocity();
+  },
 
-  return true;
-}
+  step: function() {
+    this.reactToForce();
+  }
+};
 
+
+// The thing the player is attached to.
 function Tether() {
-  var self = this;
-  self.mass = new Mass({
-    radius: 5
-  });
+  Mass.call(this);
+  this.radius = 5;
   
-  self.locked = false;
-  self.color = '#6666dd';
+  this.locked = false;
+  this.color = '#6666dd';
 
   // XXX strip out once we have proper spawning
-  self.lastMousePosition = {x: 0, y: 0};
-  self.lastUnlockedMousePosition = {x: 0, y: 0};
+  this.lastMousePosition = {x: 0, y: 0};
+  this.lastUnlockedMousePosition = {x: 0, y: 0};
 
-  self.draw = function() {
-    ctx.fillStyle = self.color;
-    ctx.beginPath();
-    ctx.arc(self.mass.position.x, self.mass.position.y, self.mass.radius, 0, Math.PI*2);
-    ctx.closePath();
-    ctx.fill();
-  };
-
-  self.step = function() {
-    if (!self.locked) {
-      self.lastUnlockedMousePosition = self.lastMousePosition;
-    }
-    self.mass.setPosition(self.lastUnlockedMousePosition);
-  };
+  var self = this;
 
   document.addEventListener('mousemove', function(e) {
     if (e.target === ctx.canvas) {
@@ -254,59 +239,77 @@ function Tether() {
     }
   });
 
-  return true;
+  return this;
 }
+extend(Mass, Tether);
 
+Tether.prototype.draw = function() {
+  ctx.fillStyle = this.color;
+  ctx.beginPath();
+  ctx.arc(this.position.x, this.position.y, this.radius, 0, Math.PI*2);
+  ctx.closePath();
+  ctx.fill();
+};
+
+Tether.prototype.step = function() {
+  if (!this.locked) {
+    this.lastUnlockedMousePosition = this.lastMousePosition;
+  }
+  this.setPosition(this.lastUnlockedMousePosition);
+};
+
+
+// The player. A weight on the end of a bungee cord.
 function Player(tether) {
-  var self = this;
-  self.mass = new Mass({
-    mass: 50,
-    lubricant: 0.99,
-    radius: 10,
-    walls: edgesOfCanvas()
-  });
+  Mass.call(this);
+  this.force = {x: 1, y: 1};
+  this.mass = 50;
+  this.lubricant = 0.99;
+  this.radius = 10;
+  this.walls = edgesOfCanvas();
 
-  self.color = '#6666dd';
-
-  self.draw = function() {
-    ctx.fillStyle = self.color;
-    ctx.beginPath();
-    ctx.arc(self.mass.position.x, self.mass.position.y, self.mass.radius, 0, Math.PI*2);
-    ctx.closePath();
-    ctx.fill();
-  };
-
-  self.step = function() {
-    self.mass.force = forXAndY([tether.mass.position, self.mass.position], function(tpos, mpos) {
-      return tpos - mpos;
-    });
-
-    self.mass.reactToForce();
-  };
-
-  self.die = function() {
-    self.color = '#ff0000';
-    tether.color = '#ff0000';
-    game.end();
-  };
-
-  return true;
+  this.tether = tether;
+  this.color = '#6666dd';
 }
+extend(Mass, Player);
 
+Player.prototype.draw = function() {
+  ctx.fillStyle = this.color;
+  ctx.beginPath();
+  ctx.arc(this.position.x, this.position.y, this.radius, 0, Math.PI*2);
+  ctx.closePath();
+  ctx.fill();
+};
+
+Player.prototype.step = function() {
+  this.force = forXAndY([this.tether.position, this.position], function(tpos, ppos) {
+    return tpos - ppos;
+  });
+  this.reactToForce();
+};
+
+Player.prototype.die = function() {
+  this.color = '#ff0000';
+  this.tether.color = '#ff0000';
+  game.end();
+};
+
+
+// The cable connecting Player to Tether.
 function Cable(tether, player) {
   var self = this;
 
   self.areaCoveredThisStep = function() {
     return [
-      tether.mass.position,
-      tether.mass.positionOnPreviousFrame,
-      player.mass.positionOnPreviousFrame,
-      player.mass.position
+      tether.position,
+      tether.positionOnPreviousFrame,
+      player.positionOnPreviousFrame,
+      player.position
     ];
   };
 
   self.line = function() {
-    return [tether.mass.position, player.mass.position];
+    return [tether.position, player.position];
   };
 
   self.draw = function() {
@@ -317,103 +320,87 @@ function Cable(tether, player) {
     ctx.lineTo(line[1].x, line[1].y);
     ctx.stroke();
     ctx.closePath();
-
-    self.drawAreaCoveredThisStep();
-  };
-
-  self.drawAreaCoveredThisStep = function() {
-    ctx.beginPath();
-    ctx.fillStyle = 'rgba(20, 200, 20, .5)';
-    var areaCovered = self.areaCoveredThisStep();
-    ctx.moveTo(areaCovered[0].x, areaCovered[0].y);
-
-    for (var i = 1; i < areaCovered.length; i++) {
-      ctx.lineTo(areaCovered[i].x, areaCovered[i].y);
-    }
-
-    ctx.lineTo(areaCovered[0].x, areaCovered[0].y);
-    ctx.fill();
-    ctx.closePath();
   };
 }
 
 /* ENEMIES */
-function Ship(target, massOpts) {
-  var self = this;
-  self.mass = new Mass(massOpts);
-  self.died = null;
-
-  self.getTargetVector = function() {
-    return forXAndY([target.mass.position, self.mass.position], function(them, us) {
-      return them - us;
-    });
-  };
-
-  self.step = function() {
-    self.mass.reactToForce();
-    if (self.mass.velocity == {x: 0, y: 0}) {
-      self.destroy = true;
-    }
-  };
-
-  self.die = function() {
-    self.died = game.timeElapsed;
-  };
+function Enemy(target) {
+  Mass.call(this);
+  this.died = null;
+  this.target = target;
+  this.deathDuration = 200;
+  this.rgb = '100,100,0';
+  this.rgbDead = '200,30,30';
 }
+extend(Mass, Enemy);
+
+Enemy.prototype.getTargetVector = function() {
+  return forXAndY([this.target.position, this.position], function(them, us) {
+    return them - us;
+  });
+};
+
+Enemy.prototype.draw = function() {
+  // Don't override this; override drawAlive and drawDead instead.
+  if (this.died !== null) {
+    this.drawDead();
+  } else {
+    this.drawAlive();
+  }
+};
+
+Enemy.prototype.drawAlive = function() {
+  ctx.fillStyle = 'rgb(' + this.rgb + ')';
+  ctx.beginPath();
+  ctx.arc(this.position.x, this.position.y, this.radius, 0, Math.PI*2);
+  ctx.closePath();
+  ctx.fill();
+};
+
+Enemy.prototype.drawDead = function() {
+  var opacity;
+
+  if (game.timeElapsed < (this.died + this.deathDuration)) {
+    opacity = 1 - ((game.timeElapsed - this.died) / this.deathDuration);
+  } else {
+    return;
+  }
+
+  ctx.fillStyle = 'rgba(' + this.rgbDead + ',' + opacity.toString() + ')';
+  ctx.beginPath();
+  ctx.arc(this.position.x, this.position.y, this.radius, 0, Math.PI*2);
+  ctx.closePath();
+  ctx.fill();
+};
+
+Enemy.prototype.die = function() {
+  this.died = game.timeElapsed;
+};
 
 function Idiot(target) {
   // A very stupid enemy. Basically the diamond from Geometry Wars.
-  var self = this;
-  var radius = 10;
-  self.ship = new Ship(target, {
-    mass: 1,
-    lubricant: 0.9,
-    radius: radius,
-    position: somewhereJustOutsideTheViewport(radius)
-  });
+  Enemy.call(this, target);
 
-  self.deathDuration = 200;
+  this.mass = 1;
+  this.lubricant = 0.9;
+  this.radius = 10;
+  this.position = somewhereJustOutsideTheViewport(this.radius);
 
-  self.rgb = '100,100,0';
-
-  self.draw = function() {
-    var opacity;
-
-    if (!self.ship.died) {
-      opacity = 1;
-    } else if (game.timeElapsed < (self.ship.died + self.deathDuration)) {
-      opacity = 1 - ((game.timeElapsed - self.ship.died) / self.deathDuration);
-    } else {
-      return;
-    }
-
-    ctx.fillStyle = 'rgba(' + self.rgb + ',' + opacity.toString() + ')';
-    ctx.beginPath();
-    ctx.arc(self.ship.mass.position.x, self.ship.mass.position.y, self.ship.mass.radius, 0, Math.PI*2);
-    ctx.closePath();
-    ctx.fill();
-  };
-
-  self.step = function() {
-    if (!self.ship.died) {
-      var targetVector = self.ship.getTargetVector();
+  this.step = function() {
+    if (!this.died) {
+      var targetVector = this.getTargetVector();
       targetVectorMagnitude = vectorMagnitude(targetVector);
-      self.ship.mass.force = forXAndY([targetVector], function(force) {
+      this.force = forXAndY([targetVector], function(force) {
         return force * (1/targetVectorMagnitude);
       });
     } else {
-      self.ship.mass.force = {x: 0, y: 0};
+      this.force = {x: 0, y: 0};
     }
 
-    self.ship.step();
-  };
-
-  self.die = function() {
-    self.rgb = '200,50,50';
-    self.ship.mass.lubricant = 0.95;
-    self.ship.die();
+    this.reactToForce();
   };
 }
+extend(Enemy, Idiot);
 
 function Twitchy() {
   // A hyperactive enemy, thrusting occasionally in the player's general direction.
@@ -482,11 +469,11 @@ function Game() {
 
     for (var i = 0; i < enemies.length; i++) {
       var enemy = enemies[i];
-      if (enemy.ship.died) {
+      if (enemy.died) {
         continue;
       }
 
-      var journey = enemy.ship.mass.journeySincePreviousFrame();
+      var journey = enemy.journeySincePreviousFrame();
       var cableLines = linesFromPolygon(cableAreaCovered);
 
       for (var ci = 0; ci < cableLines.length; ci++) {
@@ -498,7 +485,7 @@ function Game() {
         }
       }
 
-      if (pointInPolygon(enemy.ship.mass.position, cableAreaCovered)) {
+      if (pointInPolygon(enemy.position, cableAreaCovered)) {
         enemy.die();
       }
     }
@@ -507,13 +494,13 @@ function Game() {
   self.checkForEnemyContactWith = function(mass) {
     for (var i = 0; i < enemies.length; i++) {
       var enemy = enemies[i];
-      if (enemy.ship.died) {
+      if (enemy.died) {
         continue;
       }
 
       if (
-        vectorMagnitude(lineDelta([enemy.ship.mass.position, mass.position])) <
-        (enemy.ship.mass.radius + mass.radius)
+        vectorMagnitude(lineDelta([enemy.position, mass.position])) <
+        (enemy.radius + mass.radius)
       ) {
         player.die();
       }
@@ -521,8 +508,8 @@ function Game() {
   };
 
   self.checkForEnemyContact = function() {
-    self.checkForEnemyContactWith(tether.mass);
-    self.checkForEnemyContactWith(player.mass);
+    self.checkForEnemyContactWith(tether);
+    self.checkForEnemyContactWith(player);
   };
 
   self.draw = function() {
@@ -545,8 +532,6 @@ function Game() {
     tether.locked = true;
     self.speed = self.slowSpeed;
   };
-
-  return true;
 }
 
 /* FIRE */
