@@ -331,6 +331,7 @@ function Enemy(target) {
   this.deathDuration = 200;
   this.rgb = '100,100,0';
   this.rgbDead = '200,30,30';
+  this.exhausts = [];
 }
 extend(Mass, Enemy);
 
@@ -340,8 +341,37 @@ Enemy.prototype.getTargetVector = function() {
   });
 };
 
+Enemy.prototype.isWorthDestroying = function() {
+  return (this.died && game.timeElapsed < (this.died + this.deathDuration));
+};
+
+Enemy.prototype.step = function() {
+  if (this.force.x !== 0 && this.force.y !== 0 && Math.random() < 1 * game.speed) {
+    this.exhausts.push(new Exhaust(this));
+  }
+
+  for (var i = 0; i < this.exhausts.length; i++) {
+    if (this.exhausts[i] === undefined) {
+      continue;
+    } else if (this.exhausts[i].isWorthDestroying()) {
+      delete this.exhausts[i];
+    } else {
+      this.exhausts[i].step();
+    }
+  }
+
+  Mass.prototype.step.call(this);
+};
+
 Enemy.prototype.draw = function() {
   // Don't override this; override drawAlive and drawDead instead.
+  
+  for (var i = 0; i < this.exhausts.length; i++) {
+    if (this.exhausts[i] !== undefined) {
+      this.exhausts[i].draw();
+    }
+  }
+
   if (this.died !== null) {
     this.drawDead();
   } else {
@@ -359,12 +389,7 @@ Enemy.prototype.drawAlive = function() {
 
 Enemy.prototype.drawDead = function() {
   var opacity;
-
-  if (game.timeElapsed < (this.died + this.deathDuration)) {
-    opacity = 1 - ((game.timeElapsed - this.died) / this.deathDuration);
-  } else {
-    return;
-  }
+  opacity = 1 - ((game.timeElapsed - this.died) / this.deathDuration);
 
   ctx.fillStyle = 'rgba(' + this.rgbDead + ',' + opacity.toString() + ')';
   ctx.beginPath();
@@ -406,6 +431,48 @@ Idiot.prototype.step = function() {
 // A hyperactive enemy, thrusting occasionally in the player's general direction.
 // XXX needs implemented
 function Twitchy() {}
+
+
+/* EFFECTS */
+// Exhuast fired from `source`, a instance of mass. Chooses a direction to start
+// moving in based on the acceleration of the object in question.
+function Exhaust(source) {
+  Mass.call(this);
+  this.position = source.position;
+  this.color = '#c52';
+  this.radius = 2;
+  this.lubricant = 0.9;
+  this.created = game.timeElapsed;
+
+  baseVelocity = forXAndY([source.velocity, source.force], function(v, f) {
+    return v - (f * 10 / source.mass) + (Math.random() - 0.5);
+  });
+
+  var baseVelocityMagnitude = vectorMagnitude(baseVelocity);
+
+  this.velocity = forXAndY([baseVelocity], function(b) {
+    return b * (1 + (Math.random() - 0.5) * baseVelocityMagnitude * 0.2);
+  });
+}
+extend(Mass, Exhaust);
+
+Exhaust.prototype.isWorthDestroying = function() {
+  return (this.velocity.x < 0.001 && this.velocity.y < 0.001);
+};
+
+Exhaust.prototype.draw = function() {
+  ctx.strokeStyle = this.color;
+  var endOfStroke = forXAndY([this.position, this.velocity], function(p, v) {
+    return p + (v * 5);
+  });
+
+  ctx.beginPath();
+  ctx.moveTo(this.position.x, this.position.y);
+  ctx.lineTo(endOfStroke.x, endOfStroke.y);
+  ctx.stroke();
+  ctx.closePath();
+};
+
 
 
 /* THE GAME */
