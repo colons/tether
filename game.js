@@ -38,17 +38,18 @@ function somewhereJustOutsideTheViewport(buffer) {
   return somewhere;
 }
 
-function forXAndY(objs, func) {
-  function getAttributeFromAllObjs(attr) {
-    var attrs = [];
-    for (var i = 0; i < objs.length; i++) {
-      attrs.push(objs[i][attr]);
-    }
-    return attrs;
+function getAttributeFromAllObjs(objs, attr) {
+  var attrs = [];
+  for (var i = 0; i < objs.length; i++) {
+    attrs.push(objs[i][attr]);
   }
+  return attrs;
+}
+
+function forXAndY(objs, func) {
   return {
-    x: func.apply(null, getAttributeFromAllObjs('x')),
-    y: func.apply(null, getAttributeFromAllObjs('y'))
+    x: func.apply(null, getAttributeFromAllObjs(objs, 'x')),
+    y: func.apply(null, getAttributeFromAllObjs(objs, 'y'))
   };
 }
 
