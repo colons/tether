@@ -330,7 +330,7 @@ function Enemy(target) {
   this.died = null;
   this.target = target;
   this.deathDuration = 200;
-  this.rgb = '100,100,0';
+  this.rgb = '60,100,60';
   this.rgbDead = '200,30,30';
   this.exhausts = [];
 }
