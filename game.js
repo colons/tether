@@ -448,13 +448,13 @@ function Exhaust(source) {
   this.created = game.timeElapsed;
 
   baseVelocity = forXAndY([source.velocity, source.force], function(v, f) {
-    return v - (f * 10) + (Math.random() - 0.5);
+    return (0.5 * v) - (f * 10);
   });
 
   var forceMagnitude = vectorMagnitude(source.force);
 
   this.velocity = forXAndY([baseVelocity], function(b) {
-    return b * (1 + (Math.random() - 0.5) * forceMagnitude * 2);
+    return b * (1 + (Math.random() - 0.5) * forceMagnitude);
   });
 }
 extend(Mass, Exhaust);
