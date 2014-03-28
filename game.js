@@ -587,7 +587,9 @@ function Game() {
 
   self.incrementScore = function(incr) {
     self.lastPointScored = self.timeElapsed;
-    self.score += 1;
+    self.score += incr;
+    player.radius += incr/2;
+    tether.radius += incr/4;
   };
 
   self.getIntensity = function() {
