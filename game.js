@@ -659,7 +659,7 @@ function Game() {
   self.checkForEnemyContact = function() {
     var deadMass = self.checkForEnemyContactWith(tether) || self.checkForEnemyContactWith(player);
     if (deadMass) {
-      deadMass.rgb = '200,20,20'
+      deadMass.rgb = '200,20,20';
       deadMass.explode();
       game.end();
     }
