@@ -431,10 +431,7 @@ Idiot.prototype.draw = function() {
   var spokeCount = 20;
 
   for (var i = 0; i < spokeCount; i++) {
-    var angle;
-
-    if (!this.died) angle = i / spokeCount * 2 * Math.PI;
-    else angle = Math.random() * 2 * Math.PI;
+    var angle = Math.random() * 2 * Math.PI;
 
     // this should be cos, but because we want it to look more like a shotgun
     // than a cardioid, we use 1/sin instead.
