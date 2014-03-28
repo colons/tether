@@ -549,7 +549,7 @@ function Exhaust(source) {
 
   var deltaMagnitude = vectorMagnitude(delta);
   var velocity = forXAndY([baseVelocity], function(b) {
-    return b * (1 + (Math.random() - 0.5) * (deltaMagnitude * 0.25));
+    return b * (1 + (Math.random() - 0.5) * (0.8 + (deltaMagnitude * 0.1)));
   });
 
   FireParticle.call(this, position, velocity);
