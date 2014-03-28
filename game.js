@@ -540,7 +540,7 @@ function Exhaust(source) {
 extend(Mass, Exhaust);
 
 Exhaust.prototype.isWorthDestroying = function() {
-  return (this.velocity.x < 0.001 && this.velocity.y < 0.001);
+  return (Math.abs(this.velocity.x) < 0.001 && Math.abs(this.velocity.y) < 0.001);
 };
 
 Exhaust.prototype.draw = function() {
