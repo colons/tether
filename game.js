@@ -211,7 +211,7 @@ Mass.prototype = {
     this.position = position;
   },
 
-  reactToVelocity: function () {
+  reactToVelocity: function() {
     // set position based on velocity
     this.setPosition(forXAndY([this.position, this.velocity], function(pos, vel) {
       return pos + (vel * game.speed);
@@ -219,11 +219,18 @@ Mass.prototype = {
     this.collideWithWalls();
   },
 
+  velocityDelta: function() {
+    var self = this;
+    return forXAndY([this.force], function(force) {
+      return ((force * game.speed) / self.mass);
+    });
+  },
+
   reactToForce: function() {
     // set velocity and position based on force
     var self = this;
-    var projectedVelocity = forXAndY([this.velocity, this.force], function(vel, force) {
-      return vel + ((force * game.speed) / self.mass);
+    var projectedVelocity = forXAndY([this.velocity, this.velocityDelta()], function(vel, delta) {
+      return vel + delta;
     });
 
     this.velocity = forXAndY([projectedVelocity], function(projected) {
@@ -350,6 +357,7 @@ function Enemy(target) {
   this.rgb = '60,100,60';
   this.rgbDead = '200,30,30';
   this.exhausts = [];
+  this.position = somewhereJustOutsideTheViewport(this.radius);
 }
 extend(Mass, Enemy);
 
@@ -417,7 +425,6 @@ function Idiot(target) {
   this.mass = size;
   this.lubricant = 0.9;
   this.radius = size * 10;
-  this.position = somewhereJustOutsideTheViewport(this.radius);
   this.deathDuration = 50;
 }
 extend(Enemy, Idiot);
@@ -426,18 +433,15 @@ Idiot.prototype.step = function() {
   if (!this.died) {
     var targetVector = this.getTargetVector();
     targetVectorMagnitude = vectorMagnitude(targetVector);
-    this.force = forXAndY([targetVector], function(force) {
-      return force * (1/targetVectorMagnitude);
+    this.force = forXAndY([targetVector], function(target) {
+      return target * (1/targetVectorMagnitude);
     });
-  } else {
-    this.force = {x: 0, y: 0};
-  }
+  } else this.force = {x: 0, y: 0};
 
   Enemy.prototype.step.call(this);
 };
 
 Idiot.prototype.draw = function() {
-  if (this.isWorthDestroying()) return;
   var targetAngle = vectorAngle(this.getTargetVector());
   var spokeCount = 20;
 
@@ -464,30 +468,73 @@ Idiot.prototype.draw = function() {
 };
 
 
-// A hyperactive enemy, thrusting occasionally in the player's general direction.
-// XXX needs implemented
-function Twitchy() {}
+// A hyperactive enemy, thrusting occasionally in the player's direction.
+// Unlike Idiot, compensates for her own velocity.
+function Twitchy(target) {
+  Enemy.call(this, target);
+  this.charging = false;
+  this.fuel = 0.5;
+  this.mass = 100;
+  this.lubricant = 0.9;
+  this.chargeRate = 0.01;
+  this.dischargeRate = 0.1;
+  this.radius = 5;
+  this.walls = edgesOfCanvas();
+}
+extend(Enemy, Twitchy);
+
+Twitchy.prototype.step = function() {
+  if (this.died || this.charging) {
+    this.force = {x: 0, y: 0};
+    if (this.charging) {
+      this.fuel += (game.speed * this.chargeRate);
+      if (this.fuel >= 1) this.charging = false;
+    }
+  } else {
+    this.force = this.getTargetVector();
+    this.fuel -= (game.speed * this.dischargeRate);
+
+    if (this.fuel <= 0) this.charging = true;
+  }
+
+  Enemy.prototype.step.call(this);
+};
+
+Twitchy.prototype.getCurrentColor = function() {
+  if (this.charging) this.rgb = '30,30,200';
+  else this.rgb = '30,200,30';
+
+  return Enemy.prototype.getCurrentColor.call(this);
+};
+
+Twitchy.prototype.draw = function() {
+  ctx.fillStyle = this.getCurrentColor();
+  ctx.beginPath();
+  ctx.arc(this.position.x, this.position.y, this.radius, 0, Math.PI*2);
+  ctx.closePath();
+  ctx.fill();
+};
 
 
 /* EFFECTS */
-// Exhuast fired from `source`, a instance of mass. Chooses a direction to start
+// Exhaust fired from `source`, a instance of mass. Chooses a direction to start
 // moving in based on the force being exerted on the object in question.
 function Exhaust(source) {
   Mass.call(this);
   this.position = source.position;
   this.color = '#c52';
-  this.radius = 2;
   this.lubricant = 0.9;
   this.created = game.timeElapsed;
 
-  baseVelocity = forXAndY([source.velocity, source.force], function(v, f) {
-    return (0.5 * v) - (f * 10);
+  var delta = source.velocityDelta();
+  baseVelocity = forXAndY([source.velocity, delta], function(v, d) {
+    return (0.3 * v) - (d * 20);
   });
 
-  var forceMagnitude = vectorMagnitude(source.force);
+  var deltaMagnitude = vectorMagnitude(delta);
 
   this.velocity = forXAndY([baseVelocity], function(b) {
-    return b * (1 + (Math.random() - 0.5) * forceMagnitude);
+    return b * (1 + (Math.random() - 0.5) * deltaMagnitude);
   });
 }
 extend(Mass, Exhaust);
@@ -552,7 +599,8 @@ function Game() {
       if (Math.random() > 0.5) target = player;
       else target = tether;
 
-      enemies.push(new Idiot(target));
+      // enemies.push(new Idiot(target));
+      enemies.push(new Twitchy(target));
     }
   };
 
@@ -610,8 +658,11 @@ function Game() {
     ctx.fillText(self.timeElapsed.toFixed(2), 6, 20);
 
     for (var i = 0; i < enemies.length; i++) {
-      enemies[i].draw();
-      enemies[i].drawExhausts();
+      var enemy = enemies[i];
+      if (!enemy.isWorthDestroying()) {
+        enemies[i].draw();
+        enemies[i].drawExhausts();
+      }
     }
 
     cable.draw();
