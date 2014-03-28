@@ -255,12 +255,15 @@ function Tether() {
   Mass.call(this);
   this.radius = 5;
   
-  this.locked = false;
+  this.locked = true;
   this.color = '#6666dd';
 
-  // XXX strip out once we have proper spawning
-  this.lastMousePosition = {x: 0, y: 0};
-  this.lastUnlockedMousePosition = {x: 0, y: 0};
+  this.position = {
+    x: ctx.canvas.width / 2,
+    y: (ctx.canvas.height / 3) * 2
+  };
+
+  this.lastMousePosition = {x: NaN, y: NaN};
 
   var self = this;
 
@@ -284,20 +287,29 @@ Tether.prototype.draw = function() {
 
 Tether.prototype.step = function() {
   if (!this.locked) {
-    this.lastUnlockedMousePosition = this.lastMousePosition;
+    this.setPosition(this.lastMousePosition);
+  } else if (!game.started) {
+    if (vectorMagnitude(forXAndY([this.position, this.lastMousePosition], subtract)) < 20) {
+      console.log('starting');
+      game.start();
+    }
   }
-  this.setPosition(this.lastUnlockedMousePosition);
 };
 
 
 // The player. A weight on the end of a bungee cord.
 function Player(tether) {
   Mass.call(this);
-  this.force = {x: 1, y: 1};
   this.mass = 50;
-  this.lubricant = 0.99;
+  this.onceGameHasStartedLubricant = 0.99;
+  this.lubricant = 1;
   this.radius = 10;
   this.walls = edgesOfCanvas();
+  this.position = {
+    x: (ctx.canvas.width / 10),
+    y: (ctx.canvas.height / 3) * 2
+  };
+  this.velocity = {x: 0, y: ctx.canvas.height/50};
 
   this.tether = tether;
   this.color = '#6666dd';
@@ -545,6 +557,7 @@ function Game() {
   self.normalSpeed = 0.4;
   self.slowSpeed = self.normalSpeed / 100;
   self.speed = self.normalSpeed;
+  self.started = false;
 
   var enemies = [];
   self.particles = [];
@@ -552,6 +565,13 @@ function Game() {
   var tether = new Tether();
   var player = new Player(tether);
   var cable = new Cable(tether, player);
+
+  self.start = function() {
+    ctx.canvas.classList.add('hidecursor');
+    tether.locked = false;
+    player.lubricant = player.onceGameHasStartedLubricant;
+    self.started = true;
+  };
 
   self.incrementScore = function(incr) {
     self.lastPointScored = self.timeElapsed;
@@ -578,7 +598,11 @@ function Game() {
   };
 
   self.step = function() {
-    self.spawnEnemies();
+    if (self.started) {
+      self.spawnEnemies();
+      self.timeElapsed += self.speed;
+    }
+
     tether.step();
     player.step();
 
@@ -593,7 +617,6 @@ function Game() {
       self.checkForEnemyContact();
     }
 
-    self.timeElapsed += self.speed;
 
     self.draw();
   };
@@ -704,7 +727,7 @@ function Game() {
   };
 
   self.end = function() {
-    ctx.canvas.classList.add('showcursor');
+    ctx.canvas.classList.remove('hidecursor');
     self.ended = true;
     tether.locked = true;
     self.speed = self.slowSpeed;
