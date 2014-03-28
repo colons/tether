@@ -543,7 +543,7 @@ function Exhaust(source) {
   var position = source.position;
 
   var delta = source.velocityDelta();
-  baseVelocity = forXAndY([source.velocity, delta], function(v, d) {
+  var baseVelocity = forXAndY([source.velocity, delta], function(v, d) {
     return (0.3 * v) - (d * 20);
   });
 
