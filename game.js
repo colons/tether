@@ -357,9 +357,7 @@ function Enemy(target) {
   Mass.call(this);
   this.died = null;
   this.target = target;
-  this.deathDuration = 200;
   this.rgb = '60,100,60';
-  this.rgbDead = '200,30,30';
   this.exhausts = [];
   this.position = somewhereJustOutsideTheViewport(this.radius);
 }
@@ -371,52 +369,34 @@ Enemy.prototype.getTargetVector = function() {
   });
 };
 
-Enemy.prototype.isWorthDestroying = function() {
-  return (this.died && game.timeElapsed > (this.died + this.deathDuration));
-};
-
 Enemy.prototype.step = function() {
   if (this.force.x !== 0 && this.force.y !== 0 && Math.random() < 1 * game.speed) {
-    this.exhausts.push(new Exhaust(this));
-  }
-
-  for (var i = 0; i < this.exhausts.length; i++) {
-    if (this.exhausts[i] === undefined) {
-      continue;
-    } else if (this.exhausts[i].isWorthDestroying()) {
-      delete this.exhausts[i];
-    } else {
-      this.exhausts[i].step();
-    }
+    new Exhaust(this);
   }
 
   Mass.prototype.step.call(this);
 };
 
-Enemy.prototype.drawExhausts = function() {
-  for (var i = 0; i < this.exhausts.length; i++) {
-    if (this.exhausts[i] !== undefined) {
-      this.exhausts[i].draw();
-    }
-  }
-};
-
 Enemy.prototype.getOpacity = function() {
-  var opacity;
-  if (this.isWorthDestroying()) opacity = 0;
-  else if (this.died) opacity = 1 - ((game.timeElapsed - this.died) / this.deathDuration);
-  else opacity = 1;
-  return opacity;
+  if (!this.died) return 1;
+  else return 0;
 };
 
 Enemy.prototype.getCurrentColor = function() {
-  var rgb;
-  if (this.died) rgb = this.rgbDead;
-  else rgb = this.rgb;
-  return rgbWithOpacity(rgb, this.getOpacity());
+  return rgbWithOpacity(this.rgb, this.getOpacity());
+};
+
+Enemy.prototype.explode = function() {
+  for (i = 0; i < 50; i++) {
+    var angle = Math.random() * Math.PI * 2;
+    var magnitude = Math.random() * 40;
+    var velocity = forXAndY([vectorAt(angle, magnitude), this.velocity], add);
+    (new FireParticle(this.position, velocity));
+  }
 };
 
 Enemy.prototype.die = function() {
+  this.explode();
   this.died = game.timeElapsed;
   game.incrementScore(1);
 };
@@ -527,32 +507,26 @@ Twitchy.prototype.draw = function() {
 
 
 /* EFFECTS */
-// Exhaust fired from `source`, a instance of mass. Chooses a direction to start
-// moving in based on the force being exerted on the object in question.
-function Exhaust(source) {
+function Particle() {
   Mass.call(this);
-  this.position = source.position;
-  this.color = '#c52';
-  this.lubricant = 0.9;
-  this.created = game.timeElapsed;
-
-  var delta = source.velocityDelta();
-  baseVelocity = forXAndY([source.velocity, delta], function(v, d) {
-    return (0.3 * v) - (d * 20);
-  });
-
-  var deltaMagnitude = vectorMagnitude(delta);
-  this.velocity = forXAndY([baseVelocity], function(b) {
-    return b * (1 + (Math.random() - 0.5) * (deltaMagnitude * 0.25));
-  });
+  game.particles.push(this);
 }
-extend(Mass, Exhaust);
-
-Exhaust.prototype.isWorthDestroying = function() {
+extend(Mass, Particle);
+Particle.prototype.isWorthDestroying = function() {
   return (Math.abs(this.velocity.x) < 0.001 && Math.abs(this.velocity.y) < 0.001);
 };
 
-Exhaust.prototype.draw = function() {
+function FireParticle(position, velocity) {
+  Particle.call(this);
+  this.lubricant = 0.9;
+  this.created = game.timeElapsed;
+  this.color = '#c52';
+  this.position = position;
+  this.velocity = velocity;
+}
+extend(Particle, FireParticle);
+
+FireParticle.prototype.draw = function() {
   ctx.strokeStyle = this.color;
   var endOfStroke = forXAndY([this.position, this.velocity], function(p, v) {
     return p + (v * 5);
@@ -565,6 +539,25 @@ Exhaust.prototype.draw = function() {
   ctx.closePath();
 };
 
+
+// Exhaust fired from `source`, a instance of mass. Chooses a direction to start
+// moving in based on the force being exerted on the object in question.
+function Exhaust(source) {
+  var position = source.position;
+
+  var delta = source.velocityDelta();
+  baseVelocity = forXAndY([source.velocity, delta], function(v, d) {
+    return (0.3 * v) - (d * 20);
+  });
+
+  var deltaMagnitude = vectorMagnitude(delta);
+  var velocity = forXAndY([baseVelocity], function(b) {
+    return b * (1 + (Math.random() - 0.5) * (deltaMagnitude * 0.25));
+  });
+
+  FireParticle.call(this, position, velocity);
+}
+extend(FireParticle, Exhaust);
 
 
 /* THE GAME */
@@ -580,6 +573,7 @@ function Game() {
   self.speed = self.normalSpeed;
 
   var enemies = [];
+  self.particles = [];
 
   var tether = new Tether();
   var player = new Player(tether);
@@ -597,10 +591,24 @@ function Game() {
     return 1/(1 + (self.timeElapsed - self.lastPointScored));
   };
 
+  self.stepParticles = function() {
+    for (var i = 0; i < self.particles.length; i++) {
+      if (self.particles[i] === undefined) {
+        continue;
+      } else if (self.particles[i].isWorthDestroying()) {
+        delete self.particles[i];
+      } else {
+        self.particles[i].step();
+      }
+    }
+  };
+
   self.step = function() {
     self.spawnEnemies();
     tether.step();
     player.step();
+
+    self.stepParticles();
 
     for (var i = 0; i < enemies.length; i++) {
       enemies[i].step();
@@ -687,6 +695,21 @@ function Game() {
     ctx.fillText(self.score.toString(), ctx.canvas.width/2, ctx.canvas.height/2);
   };
 
+  self.drawParticles = function() {
+    for (var i = 0; i < this.particles.length; i++) {
+      if (this.particles[i] !== undefined) {
+        this.particles[i].draw();
+      }
+    }
+  };
+
+  self.drawEnemies = function() {
+    for (var i = 0; i < enemies.length; i++) {
+      var enemy = enemies[i];
+      enemy.draw();
+    }
+  };
+
   self.draw = function() {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
@@ -697,14 +720,8 @@ function Game() {
     ctx.fillText(self.timeElapsed.toFixed(2), 5, 10);
 
     self.drawScore();
-
-    for (var i = 0; i < enemies.length; i++) {
-      var enemy = enemies[i];
-      if (!enemy.isWorthDestroying()) {
-        enemies[i].draw();
-        enemies[i].drawExhausts();
-      }
-    }
+    self.drawParticles();
+    self.drawEnemies();
 
     cable.draw();
     tether.draw();
