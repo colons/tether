@@ -340,12 +340,6 @@ Player.prototype.step = function() {
   Mass.prototype.step.call(this);
 };
 
-Player.prototype.die = function() {
-  this.color = '#ff0000';
-  this.tether.color = '#ff0000';
-  game.end();
-};
-
 
 // The cable connecting Player to Tether.
 function Cable(tether, player) {
@@ -673,14 +667,18 @@ function Game() {
         vectorMagnitude(lineDelta([enemy.position, mass.position])) <
         (enemy.radius + mass.radius)
       ) {
-        player.die();
+        return mass;
       }
     }
   };
 
   self.checkForEnemyContact = function() {
-    self.checkForEnemyContactWith(tether);
-    self.checkForEnemyContactWith(player);
+    var deadMass = self.checkForEnemyContactWith(tether) || self.checkForEnemyContactWith(player);
+    if (deadMass) {
+      deadMass.color = '#ff0000';
+      deadMass.explode();
+      game.end();
+    }
   };
 
   self.drawScore = function() {
