@@ -682,7 +682,7 @@ function Game() {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = rgbWithOpacity('0,0,0', intensity);
-    ctx.fillText(self.score.toString(), ctx.canvas.width/2, ctx.canvas.height/2, ctx.canvas.width);
+    ctx.fillText(self.score.toString(), ctx.canvas.width/2, ctx.canvas.height/2);
   };
 
   self.draw = function() {
