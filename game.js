@@ -190,6 +190,7 @@ Mass.prototype = {
   lubricant: 1,
   radius: 0,
   walls: [],
+  rgb: '60,60,60',
 
   journeySincePreviousFrame: function() {
     return [this.positionOnPreviousFrame, this.position];
@@ -248,6 +249,23 @@ Mass.prototype = {
     this.reactToForce();
   },
 
+  getOpacity: function() {
+    if (!this.died) return 1;
+    else return 0;
+  },
+
+  getCurrentColor: function() {
+    return rgbWithOpacity(this.rgb, this.getOpacity());
+  },
+
+  draw: function() {
+    ctx.fillStyle = this.getCurrentColor();
+    ctx.beginPath();
+    ctx.arc(this.position.x, this.position.y, this.radius, 0, Math.PI*2);
+    ctx.closePath();
+    ctx.fill();
+  },
+
   explode: function() {
     for (i = 0; i < 50; i++) {
       var angle = Math.random() * Math.PI * 2;
@@ -265,7 +283,7 @@ function Tether() {
   this.radius = 5;
   
   this.locked = true;
-  this.color = '#6666dd';
+  this.rgb = '20,20,200';
 
   this.position = {
     x: ctx.canvas.width / 2,
@@ -285,14 +303,6 @@ function Tether() {
   return this;
 }
 extend(Mass, Tether);
-
-Tether.prototype.draw = function() {
-  ctx.fillStyle = this.color;
-  ctx.beginPath();
-  ctx.arc(this.position.x, this.position.y, this.radius, 0, Math.PI*2);
-  ctx.closePath();
-  ctx.fill();
-};
 
 Tether.prototype.step = function() {
   if (!this.locked) {
@@ -323,17 +333,9 @@ function Player(tether) {
   this.velocity = {x: 0, y: ctx.canvas.height/50};
 
   this.tether = tether;
-  this.color = '#6666dd';
+  this.rgb = '20,20,200';
 }
 extend(Mass, Player);
-
-Player.prototype.draw = function() {
-  ctx.fillStyle = this.color;
-  ctx.beginPath();
-  ctx.arc(this.position.x, this.position.y, this.radius, 0, Math.PI*2);
-  ctx.closePath();
-  ctx.fill();
-};
 
 Player.prototype.step = function() {
   this.force = forXAndY([this.tether.position, this.position], subtract);
@@ -374,7 +376,6 @@ function Enemy(target) {
   Mass.call(this);
   this.died = null;
   this.target = target;
-  this.rgb = '60,100,60';
   this.exhausts = [];
   this.position = somewhereJustOutsideTheViewport(this.radius);
 }
@@ -394,23 +395,6 @@ Enemy.prototype.step = function() {
   Mass.prototype.step.call(this);
 };
 
-Enemy.prototype.draw = function() {
-  ctx.fillStyle = this.getCurrentColor();
-  ctx.beginPath();
-  ctx.arc(this.position.x, this.position.y, this.radius, 0, Math.PI*2);
-  ctx.closePath();
-  ctx.fill();
-};
-
-Enemy.prototype.getOpacity = function() {
-  if (!this.died) return 1;
-  else return 0;
-};
-
-Enemy.prototype.getCurrentColor = function() {
-  return rgbWithOpacity(this.rgb, this.getOpacity());
-};
-
 Enemy.prototype.die = function() {
   this.explode();
   this.died = game.timeElapsed;
@@ -427,6 +411,7 @@ function Idiot(target) {
   this.lubricant = 0.9;
   this.radius = size * 10;
   this.deathDuration = 50;
+  this.rgb = '60,100,60';
 }
 extend(Enemy, Idiot);
 
@@ -612,7 +597,6 @@ function Game() {
       self.checkForCableContact();
       self.checkForEnemyContact();
     }
-
 
     self.draw();
   };
