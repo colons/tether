@@ -534,7 +534,7 @@ function Exhaust(source) {
   var deltaMagnitude = vectorMagnitude(delta);
 
   this.velocity = forXAndY([baseVelocity], function(b) {
-    return b * (1 + (Math.random() - 0.5) * deltaMagnitude);
+    return b * (1 + (Math.random() - 0.5) * (deltaMagnitude / 2));
   });
 }
 extend(Mass, Exhaust);
