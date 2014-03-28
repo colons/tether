@@ -627,8 +627,9 @@ function Game() {
       if (Math.random() > 0.5) target = player;
       else target = tether;
 
-      // enemies.push(new Idiot(target));
-      enemies.push(new Twitchy(target));
+      var enemyPool = [Idiot, Twitchy];
+      var thisEnemy = enemyPool[Math.floor(Math.random() * enemyPool.length)];
+      enemies.push(new thisEnemy(target));
     }
   };
 
