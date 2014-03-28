@@ -414,6 +414,7 @@ Enemy.prototype.getCurrentColor = function() {
 
 Enemy.prototype.die = function() {
   this.died = game.timeElapsed;
+  game.incrementScore(1);
 };
 
 function Idiot(target) {
@@ -568,6 +569,7 @@ function Game() {
   var self = this;
   game = self;
 
+  self.score = 0;
   self.timeElapsed = 0;
   self.baseSpeed = 0.4;
   self.slowSpeed = self.baseSpeed / 100;
@@ -578,6 +580,11 @@ function Game() {
   var tether = new Tether();
   var player = new Player(tether);
   var cable = new Cable(tether, player);
+
+  self.incrementScore = function(incr) {
+    self.lastPointScored = self.timeElapsed;
+    self.score += 1;
+  };
 
   self.step = function() {
     self.spawnEnemies();
@@ -661,6 +668,7 @@ function Game() {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     ctx.fillStyle = '#000';
     ctx.fillText(self.timeElapsed.toFixed(2), 6, 20);
+    ctx.fillText(self.score.toString(), 6, 40);
 
     for (var i = 0; i < enemies.length; i++) {
       var enemy = enemies[i];
