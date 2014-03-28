@@ -246,6 +246,15 @@ Mass.prototype = {
 
   step: function() {
     this.reactToForce();
+  },
+
+  explode: function() {
+    for (i = 0; i < 50; i++) {
+      var angle = Math.random() * Math.PI * 2;
+      var magnitude = Math.random() * 40;
+      var velocity = forXAndY([vectorAt(angle, magnitude), this.velocity], add);
+      (new FireParticle(this.position, velocity));
+    }
   }
 };
 
@@ -260,7 +269,7 @@ function Tether() {
 
   this.position = {
     x: ctx.canvas.width / 2,
-    y: (ctx.canvas.height / 3) * 2
+    y: ctx.canvas.height / 2
   };
 
   this.lastMousePosition = {x: NaN, y: NaN};
@@ -292,6 +301,8 @@ Tether.prototype.step = function() {
     if (vectorMagnitude(forXAndY([this.position, this.lastMousePosition], subtract)) < 20) {
       console.log('starting');
       game.start();
+    } else {
+      // XXX draw attention to me
     }
   }
 };
@@ -404,15 +415,6 @@ Enemy.prototype.getOpacity = function() {
 
 Enemy.prototype.getCurrentColor = function() {
   return rgbWithOpacity(this.rgb, this.getOpacity());
-};
-
-Enemy.prototype.explode = function() {
-  for (i = 0; i < 50; i++) {
-    var angle = Math.random() * Math.PI * 2;
-    var magnitude = Math.random() * 40;
-    var velocity = forXAndY([vectorAt(angle, magnitude), this.velocity], add);
-    (new FireParticle(this.position, velocity));
-  }
 };
 
 Enemy.prototype.die = function() {
