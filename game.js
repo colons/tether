@@ -105,11 +105,20 @@ function pointInPolygon(point, polygon) {
 }
 
 function vectorMagnitude(vector) {
-  return Math.pow(Math.pow(vector.x, 2) + Math.pow(vector.y, 2), 1/2);
+  return Math.abs(Math.pow(Math.pow(vector.x, 2) + Math.pow(vector.y, 2), 1/2));
 }
 
 function vectorAngle(vector) {
-  return Math.atan(vector.x, vector.y);
+  theta = Math.atan(vector.y/vector.x);
+  if (vector.x < 0) theta += Math.PI;
+  return theta;
+}
+
+function vectorAt(angle, magnitude) {
+  return {
+    x: Math.cos(angle) * magnitude,
+    y: Math.sin(angle) * magnitude
+  };
 }
 
 function linesFromPolygon(polygon) {
@@ -428,6 +437,30 @@ Idiot.prototype.step = function() {
   }
 
   Enemy.prototype.step.call(this);
+};
+
+Idiot.prototype.drawAlive = function() {
+  var targetAngle = vectorAngle(this.getTargetVector());
+
+  for (var i = 0; i < 20; i++) {
+    var angle = Math.random() * 2 * Math.PI;
+
+    // this should be cos, but because we want it to look more like a shotgun
+    // than a cardioid, we use 1/sin instead.
+    var magnitude = (1 / Math.abs(Math.sin(targetAngle/2 - angle/2))) + this.radius;
+    magnitude = Math.random() * magnitude;
+
+    var endPoint = forXAndY([this.position, vectorAt(angle, magnitude)], function(s, f) {
+      return s + f;
+    });
+
+    ctx.strokeStyle = 'rgb(' + this.rgb + ')';
+    ctx.beginPath();
+    ctx.moveTo(this.position.x, this.position.y);
+    ctx.lineTo(endPoint.x, endPoint.y);
+    ctx.stroke();
+    ctx.closePath();
+  }
 };
 
 
