@@ -377,6 +377,14 @@ Enemy.prototype.step = function() {
   Mass.prototype.step.call(this);
 };
 
+Enemy.prototype.draw = function() {
+  ctx.fillStyle = this.getCurrentColor();
+  ctx.beginPath();
+  ctx.arc(this.position.x, this.position.y, this.radius, 0, Math.PI*2);
+  ctx.closePath();
+  ctx.fill();
+};
+
 Enemy.prototype.getOpacity = function() {
   if (!this.died) return 1;
   else return 0;
@@ -426,29 +434,6 @@ Idiot.prototype.step = function() {
   Enemy.prototype.step.call(this);
 };
 
-Idiot.prototype.draw = function() {
-  var targetAngle = vectorAngle(this.getTargetVector());
-  var spokeCount = 20;
-
-  for (var i = 0; i < spokeCount; i++) {
-    var angle = Math.random() * 2 * Math.PI;
-
-    // this should be cos, but because we want it to look more like a shotgun
-    // than a cardioid, we use 1/sin instead.
-    var magnitude = (1 / Math.abs(Math.sin(targetAngle/2 - angle/2))) + this.radius;
-    if (this.died) magnitude = Math.random() * magnitude;
-
-    var endPoint = forXAndY([this.position, vectorAt(angle, magnitude)], add);
-
-    ctx.strokeStyle = this.getCurrentColor();
-    ctx.beginPath();
-    ctx.moveTo(this.position.x, this.position.y);
-    ctx.lineTo(endPoint.x, endPoint.y);
-    ctx.stroke();
-    ctx.closePath();
-  }
-};
-
 
 // A hyperactive enemy, thrusting occasionally in the player's direction.
 // Unlike Idiot, compensates for her own velocity.
@@ -492,14 +477,6 @@ Twitchy.prototype.getCurrentColor = function() {
   else this.rgb = '30,200,30';
 
   return Enemy.prototype.getCurrentColor.call(this);
-};
-
-Twitchy.prototype.draw = function() {
-  ctx.fillStyle = this.getCurrentColor();
-  ctx.beginPath();
-  ctx.arc(this.position.x, this.position.y, this.radius, 0, Math.PI*2);
-  ctx.closePath();
-  ctx.fill();
 };
 
 
