@@ -153,7 +153,7 @@ function lineDelta(line) {
 }
 
 function rgbWithOpacity(rgb, opacity) {
-  return 'rgba(' + rgb  + ',' + opacity.toString() + ')';
+  return 'rgba(' + rgb.join(',') + ',' + opacity.toString() + ')';
 }
 
 /* SETUP */
@@ -190,7 +190,7 @@ Mass.prototype = {
   lubricant: 1,
   radius: 0,
   walls: [],
-  rgb: '60,60,60',
+  rgb: [60,60,60],
 
   journeySincePreviousFrame: function() {
     return [this.positionOnPreviousFrame, this.position];
@@ -283,7 +283,7 @@ function Tether() {
   this.radius = 5;
   
   this.locked = true;
-  this.rgb = '20,20,200';
+  this.rgb = [20,20,200];
 
   this.position = {
     x: ctx.canvas.width / 2,
@@ -333,7 +333,7 @@ function Player(tether) {
   this.velocity = {x: 0, y: ctx.canvas.height/50};
 
   this.tether = tether;
-  this.rgb = '20,20,200';
+  this.rgb = [20,20,200];
 }
 extend(Mass, Player);
 
@@ -411,7 +411,7 @@ function Idiot(target) {
   this.lubricant = 0.9;
   this.radius = size * 10;
   this.deathDuration = 50;
-  this.rgb = '60,100,60';
+  this.rgb = [60,100,60];
 }
 extend(Enemy, Idiot);
 
@@ -466,8 +466,8 @@ Twitchy.prototype.step = function() {
 };
 
 Twitchy.prototype.getCurrentColor = function() {
-  if (this.charging) this.rgb = '30,30,200';
-  else this.rgb = '30,200,30';
+  if (this.charging) this.rgb = [30,30,200];
+  else this.rgb = [30,200,30];
 
   return Enemy.prototype.getCurrentColor.call(this);
 };
@@ -659,7 +659,7 @@ function Game() {
   self.checkForEnemyContact = function() {
     var deadMass = self.checkForEnemyContactWith(tether) || self.checkForEnemyContactWith(player);
     if (deadMass) {
-      deadMass.rgb = '200,20,20';
+      deadMass.rgb = [200,20,20];
       deadMass.explode();
       game.end();
     }
@@ -673,7 +673,7 @@ function Game() {
     ctx.font = (intensity * ctx.canvas.height * 5).toString() + 'px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = rgbWithOpacity('0,0,0', intensity);
+    ctx.fillStyle = rgbWithOpacity([0,0,0], intensity);
     ctx.fillText(self.score.toString(), ctx.canvas.width/2, ctx.canvas.height/2);
   };
 
