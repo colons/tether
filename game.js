@@ -222,7 +222,7 @@ Mass.prototype = {
   velocityDelta: function() {
     var self = this;
     return forXAndY([this.force], function(force) {
-      return ((force * game.speed) / self.mass);
+      return (force / self.mass);
     });
   },
 
@@ -230,7 +230,7 @@ Mass.prototype = {
     // set velocity and position based on force
     var self = this;
     var projectedVelocity = forXAndY([this.velocity, this.velocityDelta()], function(vel, delta) {
-      return vel + delta;
+      return vel + delta * game.speed;
     });
 
     this.velocity = forXAndY([projectedVelocity], function(projected) {
@@ -538,9 +538,8 @@ function Exhaust(source) {
   });
 
   var deltaMagnitude = vectorMagnitude(delta);
-
   this.velocity = forXAndY([baseVelocity], function(b) {
-    return b * (1 + (Math.random() - 0.5) * (deltaMagnitude / 2));
+    return b * (1 + (Math.random() - 0.5) * (deltaMagnitude * 0.25));
   });
 }
 extend(Mass, Exhaust);
