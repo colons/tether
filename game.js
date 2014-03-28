@@ -473,9 +473,14 @@ Idiot.prototype.draw = function() {
 function Twitchy(target) {
   Enemy.call(this, target);
   this.charging = false;
-  this.fuel = 0.5;
+
+  // Give just enough fuel to get away from the edge of the screen; to start
+  // with a full load of fuel would be super, super mean.
+  this.fuel = 0.05;
+
+  // Calibrated to pretty close to the player.
   this.mass = 100;
-  this.lubricant = 0.9;
+  this.lubricant = 0.92;
   this.chargeRate = 0.01;
   this.dischargeRate = 0.1;
   this.radius = 5;
