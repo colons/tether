@@ -53,6 +53,18 @@ function forXAndY(objs, func) {
   };
 }
 
+function add() {
+  var s = 0;
+  for (var i = 0; i < arguments.length; i++) {
+    s += arguments[i];
+  }
+  return s;
+}
+
+function subtract(a, b) {
+  return a - b;
+}
+
 function getIntersection(line1, line2) {
   var denominator, a, b, numerator1, numerator2, result = {
     x: null,
@@ -137,9 +149,7 @@ function lineAngle(line) {
 }
 
 function lineDelta(line) {
-  return forXAndY(line, function(a, b) {
-    return b - a;
-  });
+  return forXAndY(line, subtract);
 }
 
 /* SETUP */
@@ -292,9 +302,7 @@ Player.prototype.draw = function() {
 };
 
 Player.prototype.step = function() {
-  this.force = forXAndY([this.tether.position, this.position], function(tpos, ppos) {
-    return tpos - ppos;
-  });
+  this.force = forXAndY([this.tether.position, this.position], subtract);
   Mass.prototype.step.call(this);
 };
 
@@ -450,9 +458,7 @@ Idiot.prototype.drawAlive = function() {
     var magnitude = (1 / Math.abs(Math.sin(targetAngle/2 - angle/2))) + this.radius;
     magnitude = Math.random() * magnitude;
 
-    var endPoint = forXAndY([this.position, vectorAt(angle, magnitude)], function(s, f) {
-      return s + f;
-    });
+    var endPoint = forXAndY([this.position, vectorAt(angle, magnitude)], add);
 
     ctx.strokeStyle = 'rgb(' + this.rgb + ')';
     ctx.beginPath();
