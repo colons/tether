@@ -437,6 +437,7 @@ Idiot.prototype.step = function() {
 };
 
 Idiot.prototype.draw = function() {
+  if (this.isWorthDestroying()) return;
   var targetAngle = vectorAngle(this.getTargetVector());
   var spokeCount = 20;
 
