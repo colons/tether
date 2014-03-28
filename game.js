@@ -360,7 +360,7 @@ Enemy.prototype.getTargetVector = function() {
 };
 
 Enemy.prototype.isWorthDestroying = function() {
-  return (this.died && game.timeElapsed < (this.died + this.deathDuration));
+  return (this.died && game.timeElapsed > (this.died + this.deathDuration));
 };
 
 Enemy.prototype.step = function() {
@@ -381,39 +381,27 @@ Enemy.prototype.step = function() {
   Mass.prototype.step.call(this);
 };
 
-Enemy.prototype.draw = function() {
-  // Don't override this; override drawAlive and drawDead instead.
-  
+Enemy.prototype.drawExhausts = function() {
   for (var i = 0; i < this.exhausts.length; i++) {
     if (this.exhausts[i] !== undefined) {
       this.exhausts[i].draw();
     }
   }
-
-  if (this.died !== null) {
-    this.drawDead();
-  } else {
-    this.drawAlive();
-  }
 };
 
-Enemy.prototype.drawAlive = function() {
-  ctx.fillStyle = 'rgb(' + this.rgb + ')';
-  ctx.beginPath();
-  ctx.arc(this.position.x, this.position.y, this.radius, 0, Math.PI*2);
-  ctx.closePath();
-  ctx.fill();
-};
-
-Enemy.prototype.drawDead = function() {
+Enemy.prototype.getOpacity = function() {
   var opacity;
-  opacity = 1 - ((game.timeElapsed - this.died) / this.deathDuration);
+  if (this.isWorthDestroying()) opacity = 0;
+  else if (this.died) opacity = 1 - ((game.timeElapsed - this.died) / this.deathDuration);
+  else opacity = 1;
+  return opacity;
+};
 
-  ctx.fillStyle = 'rgba(' + this.rgbDead + ',' + opacity.toString() + ')';
-  ctx.beginPath();
-  ctx.arc(this.position.x, this.position.y, this.radius, 0, Math.PI*2);
-  ctx.closePath();
-  ctx.fill();
+Enemy.prototype.getCurrentColor = function() {
+  var rgb;
+  if (this.died) rgb = this.rgbDead;
+  else rgb = this.rgb;
+  return 'rgba(' + rgb  + ',' + this.getOpacity().toString() + ')';
 };
 
 Enemy.prototype.die = function() {
@@ -430,6 +418,7 @@ function Idiot(target) {
   this.lubricant = 0.9;
   this.radius = size * 10;
   this.position = somewhereJustOutsideTheViewport(this.radius);
+  this.deathDuration = 50;
 }
 extend(Enemy, Idiot);
 
@@ -447,20 +436,24 @@ Idiot.prototype.step = function() {
   Enemy.prototype.step.call(this);
 };
 
-Idiot.prototype.drawAlive = function() {
+Idiot.prototype.draw = function() {
   var targetAngle = vectorAngle(this.getTargetVector());
+  var spokeCount = 20;
 
-  for (var i = 0; i < 20; i++) {
-    var angle = Math.random() * 2 * Math.PI;
+  for (var i = 0; i < spokeCount; i++) {
+    var angle;
+
+    if (!this.died) angle = i / spokeCount * 2 * Math.PI;
+    else angle = Math.random() * 2 * Math.PI;
 
     // this should be cos, but because we want it to look more like a shotgun
     // than a cardioid, we use 1/sin instead.
     var magnitude = (1 / Math.abs(Math.sin(targetAngle/2 - angle/2))) + this.radius;
-    magnitude = Math.random() * magnitude;
+    if (this.died) magnitude = Math.random() * magnitude;
 
     var endPoint = forXAndY([this.position, vectorAt(angle, magnitude)], add);
 
-    ctx.strokeStyle = 'rgb(' + this.rgb + ')';
+    ctx.strokeStyle = this.getCurrentColor();
     ctx.beginPath();
     ctx.moveTo(this.position.x, this.position.y);
     ctx.lineTo(endPoint.x, endPoint.y);
@@ -617,6 +610,7 @@ function Game() {
 
     for (var i = 0; i < enemies.length; i++) {
       enemies[i].draw();
+      enemies[i].drawExhausts();
     }
 
     cable.draw();
