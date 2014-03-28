@@ -152,6 +152,10 @@ function lineDelta(line) {
   return forXAndY(line, subtract);
 }
 
+function rgbWithOpacity(rgb, opacity) {
+  return 'rgba(' + rgb  + ',' + opacity.toString() + ')';
+}
+
 /* SETUP */
 function scaleCanvas() {
   ctx.canvas.width = window.innerWidth;
@@ -409,7 +413,7 @@ Enemy.prototype.getCurrentColor = function() {
   var rgb;
   if (this.died) rgb = this.rgbDead;
   else rgb = this.rgb;
-  return 'rgba(' + rgb  + ',' + this.getOpacity().toString() + ')';
+  return rgbWithOpacity(rgb, this.getOpacity());
 };
 
 Enemy.prototype.die = function() {
@@ -569,10 +573,11 @@ function Game() {
   game = self;
 
   self.score = 0;
+  self.lastPointScored = 0;
   self.timeElapsed = 0;
-  self.baseSpeed = 0.4;
-  self.slowSpeed = self.baseSpeed / 100;
-  self.speed = self.baseSpeed;
+  self.normalSpeed = 0.4;
+  self.slowSpeed = self.normalSpeed / 100;
+  self.speed = self.normalSpeed;
 
   var enemies = [];
 
@@ -583,6 +588,11 @@ function Game() {
   self.incrementScore = function(incr) {
     self.lastPointScored = self.timeElapsed;
     self.score += 1;
+  };
+
+  self.getIntensity = function() {
+    // Get a number representing how the player should be feeling.
+    return 1/(1 + (self.timeElapsed - self.lastPointScored));
   };
 
   self.step = function() {
@@ -663,11 +673,28 @@ function Game() {
     self.checkForEnemyContactWith(player);
   };
 
+  self.drawScore = function() {
+    if (self.score === 0) return;
+
+    var intensity = self.getIntensity();
+
+    ctx.font = (intensity * ctx.canvas.height * 5).toString() + 'px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = rgbWithOpacity('0,0,0', intensity);
+    ctx.fillText(self.score.toString(), ctx.canvas.width/2, ctx.canvas.height/2, ctx.canvas.width);
+  };
+
   self.draw = function() {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
     ctx.fillStyle = '#000';
-    ctx.fillText(self.timeElapsed.toFixed(2), 6, 20);
-    ctx.fillText(self.score.toString(), 6, 40);
+    ctx.font = '10px fixed';
+    ctx.fillText(self.timeElapsed.toFixed(2), 5, 10);
+
+    self.drawScore();
 
     for (var i = 0; i < enemies.length; i++) {
       var enemy = enemies[i];
