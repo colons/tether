@@ -301,8 +301,8 @@ Tether.prototype.step = function() {
     if (vectorMagnitude(forXAndY([this.position, this.lastMousePosition], subtract)) < 20) {
       console.log('starting');
       game.start();
-    } else {
-      // XXX draw attention to me
+    } else if (Math.random() < 0.03 * game.speed) {
+      this.explode();
     }
   }
 };
