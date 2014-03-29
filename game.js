@@ -2,10 +2,6 @@ var game;
 var ctx;
 
 /* UTILITIES */
-// All this maths bullshit should probably be refactored into Point and Line
-// objects. I'd suggest a Vector as well, but Vector would have the same
-// interface as Point, so they may as well be the same object.
-
 function extend(base, sub) {
   sub.prototype = Object.create(base.prototype);
   sub.prototype.constructor = sub;
