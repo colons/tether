@@ -1,4 +1,5 @@
 var DEBUG = (window.location.hash === '#DEBUG');
+var INFO = (DEBUG || window.location.hash === '#INFO');
 
 var game;
 var canvas;
@@ -261,7 +262,7 @@ Mass.prototype = {
   reactToVelocity: function() {
     // set position based on velocity
     this.setPosition(forXAndY([this.position, this.velocity], function(pos, vel) {
-      return pos + (vel * game.speed);
+      return pos + (vel * game.timeDelta);
     }));
     this.collideWithWalls();
   },
@@ -277,11 +278,11 @@ Mass.prototype = {
     // set velocity and position based on force
     var self = this;
     var projectedVelocity = forXAndY([this.velocity, this.velocityDelta()], function(vel, delta) {
-      return vel + delta * game.speed;
+      return vel + delta * game.timeDelta;
     });
 
     this.velocity = forXAndY([projectedVelocity], function(projected) {
-      return projected * Math.pow(self.lubricant, game.speed);
+      return projected * Math.pow(self.lubricant, game.timeDelta);
     });
 
     this.reactToVelocity();
@@ -487,7 +488,7 @@ Enemy.prototype.getTargetVector = function() {
 };
 
 Enemy.prototype.step = function() {
-  if (this.force.x !== 0 && this.force.y !== 0 && Math.random() < game.speed * vectorMagnitude(this.velocityDelta())) {
+  if (this.force.x !== 0 && this.force.y !== 0 && Math.random() < game.timeDelta * vectorMagnitude(this.velocityDelta())) {
     new Exhaust(this);
   }
 
@@ -576,12 +577,12 @@ Twitchy.prototype.step = function() {
   if (this.died || this.charging) {
     this.force = {x: 0, y: 0};
     if (this.charging) {
-      this.fuel += (game.speed * this.chargeRate);
+      this.fuel += (game.timeDelta * this.chargeRate);
       if (this.fuel >= 1) this.charging = false;
     }
   } else {
     this.force = this.getTargetVector();
-    this.fuel -= (game.speed * this.dischargeRate);
+    this.fuel -= (game.timeDelta * this.dischargeRate);
 
     if (this.fuel <= 0) this.charging = true;
   }
@@ -702,9 +703,10 @@ function Game() {
     self.score = 0;
     self.lastPointScored = 0;
     self.timeElapsed = 0;
-    self.normalSpeed = 0.4;
+    self.normalSpeed = 0.04;
     self.slowSpeed = self.normalSpeed / 100;
     self.speed = self.normalSpeed;
+
     self.spawnWarningDuration = 50;
     self.started = false;
 
@@ -750,7 +752,26 @@ function Game() {
   };
 
   self.step = function() {
-    self.timeElapsed += self.speed;
+    var now = new Date().getTime();
+
+    if (!self.lastStepped) {
+      // While it'd be nice to actually do something here, I really don't think
+      // a single frame of blankness is worth losing the pervasiveness of
+      // game.timeDelta.
+      self.lastStepped = now;
+      return;
+    } else {
+      self.realTimeDelta = now - self.lastStepped;
+
+      // We can't assume we will always be being executed and sometimes
+      // computers are just slow.  In these situations, we have to choose a
+      // point at which we start to favour slowdown over broken physics.
+      // 20FPS seems like about the right point to do that.
+      self.timeDelta = Math.min(self.realTimeDelta, 1000/20) * self.speed;
+
+      self.timeElapsed += self.timeDelta;
+      self.lastStepped = now;
+    }
 
     if (self.started) {
       self.spawnEnemies();
@@ -774,7 +795,7 @@ function Game() {
   };
 
   self.spawnEnemies = function() {
-    if (Math.random() < 0.02 * game.speed) {
+    if (Math.random() < 0.02 * game.timeDelta) {
       var target;
       if (Math.random() > 0.5) target = self.player;
       else target = self.tether;
@@ -917,6 +938,23 @@ function Game() {
     ctx.fillText({touch: 'tap', mouse: 'click'}[self.tether.lastInteraction] + ' to restart', width/2, height/2);
   };
 
+  self.drawInfo = function() {
+    var fromBottom = 7;
+    var info = {
+      time: self.timeElapsed.toFixed(2),
+      fps: (1000/self.realTimeDelta).toFixed()
+    };
+  
+    for (var key in info) {
+      ctx.font = '15px monospace';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillStyle = rgbWithOpacity([0,0,0], 1);
+      ctx.fillText(key + ': ' + info[key], 5, height-fromBottom);
+      fromBottom += 18;
+    }
+  };
+
   self.draw = function() {
     ctx.clearRect(0, 0, width, height);
 
@@ -930,6 +968,8 @@ function Game() {
 
     self.drawLogo();
     self.drawRestartTutorial();
+
+    if (INFO) self.drawInfo();
   };
 
   self.end = function() {
@@ -947,10 +987,25 @@ function Game() {
 initCanvas();
 game = new Game();
 
-document.addEventListener('mousedown', function(e) {
+function restartGameIfEnded(e) {
   if (game.ended) {
     game.reset();
   }
-});
+}
 
-setInterval(game.step, 10);
+document.addEventListener('mousedown', restartGameIfEnded);
+document.addEventListener('touchstart', restartGameIfEnded);
+
+// http://www.paulirish.com/2011/requestanimationframe-for-smart-animating/
+window.requestFrame = (
+  window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || function(callback){
+    window.setTimeout(callback, 1000 / 60);
+  }
+);
+
+function animate() {
+  requestFrame(animate);
+  game.step();
+}
+
+animate();
