@@ -388,7 +388,7 @@ Enemy.prototype.getTargetVector = function() {
 };
 
 Enemy.prototype.step = function() {
-  if (this.force.x !== 0 && this.force.y !== 0 && Math.random() < 1 * game.speed) {
+  if (this.force.x !== 0 && this.force.y !== 0 && Math.random() < game.speed * vectorMagnitude(this.velocityDelta())) {
     new Exhaust(this);
   }
 
