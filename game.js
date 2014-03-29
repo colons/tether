@@ -487,14 +487,27 @@ function FireParticle(position, velocity) {
   Particle.call(this);
   this.lubricant = 0.9;
   this.created = game.timeElapsed;
-  this.color = '#c52';
   this.position = position;
   this.velocity = velocity;
+  this.initialIntensity = vectorMagnitude(velocity) * (2 * Math.random());
+  this.red = 1;
+  this.green = 1;
+  this.blue = 0;
+  this.opacity = 1;
 }
 extend(Particle, FireParticle);
 
+FireParticle.prototype.getCurrentColor = function() {
+  var intensity = vectorMagnitude(this.velocity) / this.initialIntensity;
+  return rgbWithOpacity([
+    (Math.pow(intensity, 0.2) * 255 * this.red).toFixed(0),
+    (intensity * 200 * this.green).toFixed(0),
+    (intensity * 200 * this.blue).toFixed(0)
+  ], Math.pow(intensity, 0.25) * this.opacity);
+};
+
 FireParticle.prototype.draw = function() {
-  ctx.strokeStyle = this.color;
+  ctx.strokeStyle = this.getCurrentColor();
   var endOfStroke = forXAndY([this.position, this.velocity], function(p, v) {
     return p + (v * 5);
   });
@@ -523,6 +536,11 @@ function Exhaust(source) {
   });
 
   FireParticle.call(this, position, velocity);
+
+  this.red = 0.8;
+  this.green = 0.5;
+  this.blue = 0.3;
+  this.opacity = 0.5;
 }
 extend(FireParticle, Exhaust);
 
