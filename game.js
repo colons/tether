@@ -61,6 +61,12 @@ function subtract(a, b) {
   return a - b;
 }
 
+function randomisedVector(vector, potentialMagnitude) {
+  var angle = Math.random() * Math.PI * 2;
+  var magnitude = Math.random() * potentialMagnitude;
+  return forXAndY([vector, vectorAt(angle, magnitude)], add);
+}
+
 function multiply() {
   var p = 0;
   for (var i = 0; i < arguments.length; i++) {
@@ -786,18 +792,16 @@ function Game() {
     ctx.textBaseline = 'alphabetic';
     ctx.fillStyle = '#000';
     ctx.font = (ctx.canvas.height / 8).toString() + 'px "Tulpen One" sans-serif';
-    ctx.fillText('tether', centre.x, centre.y);
+    ctx.fillText('tether', centre.x + ctx.canvas.height/100, centre.y - ctx.canvas.height/100);
 
     // fire
-    function seededRandom(variance, seed) {
-      // like Math.random() in that it returns values between 0 and 1, but
-      // unlike Math.random in that the values it returns are deterministic.
-      return (Math.sin((game.timeElapsed + seed) * variance) + 1) / 2;
-    }
-
     function drawWith(i) {
-      var angle = seededRandom(1/10, i*3) * (Math.PI * 1.5);
-      var magnitude = (seededRandom(1, i*2) * ctx.canvas.height/10) + ctx.canvas.height/4;
+      var angle = Math.sin(game.timeElapsed/200 + i) * (Math.PI * 0.75) + (Math.PI * 0.75);
+      var baseMagnitude = Math.random();
+
+      var baseVector = vectorAt(angle, baseMagnitude);
+      var relativeMagnitude = baseMagnitude * Math.pow(Math.max(Math.abs(baseVector.x), Math.abs(baseVector.y * 1.5)), 2);
+      var magnitude = relativeMagnitude * ctx.canvas.height/10;
 
       var endVector = vectorAt(angle, magnitude);
       var startVector = vectorAt(angle, magnitude * 0.2);
@@ -805,19 +809,17 @@ function Game() {
       var startOfStroke = forXAndY([centre, startVector], add);
       var endOfStroke = forXAndY([centre, endVector], add);
 
-      var red = seededRandom(0.2, i) * 255;
-      var green = seededRandom(0.3, i) * 200;
-      var blue = seededRandom(0.5, i) * 255;
+      startOfStroke = randomisedVector(startOfStroke, ctx.canvas.height/100);
+      endOfStroke = randomisedVector(endOfStroke, ctx.canvas.height/40);
 
-      ctx.strokeStyle = rgbWithOpacity([red,green,blue], 1);
-      console.log(ctx.strokeStyle);
+      ctx.strokeStyle = rgbWithOpacity([10,10,10], relativeMagnitude);
       ctx.beginPath();
       ctx.moveTo(startOfStroke.x, startOfStroke.y);
       ctx.lineTo(endOfStroke.x, endOfStroke.y);
       ctx.stroke();
     }
 
-    for (i = 0; i < Math.PI * 2; i += Math.PI/30) {
+    for (i = 0; i < Math.PI * 2; i += Math.PI/70) {
       drawWith(i);
     }
   };
