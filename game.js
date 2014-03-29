@@ -593,11 +593,15 @@ extend(Particle, FireParticle);
 
 FireParticle.prototype.getCurrentColor = function() {
   var intensity = vectorMagnitude(this.velocity) / this.initialIntensity;
-  return rgbWithOpacity([
-    (Math.pow(intensity, 0.2) * 255 * this.red),
-    (intensity * 200 * this.green),
-    (intensity * 200 * this.blue)
-  ], Math.pow(intensity, 0.25) * this.opacity);
+  return rgbWithOpacity(this.rgbForIntensity(intensity), Math.pow(intensity, 0.25) * this.opacity);
+};
+
+FireParticle.prototype.rgbForIntensity = function(intensity) {
+  return [
+    (Math.pow(intensity, 0.2) * 255),
+    (intensity * 200),
+    0
+  ];
 };
 
 FireParticle.prototype.draw = function() {
@@ -630,12 +634,17 @@ function Exhaust(source) {
 
   FireParticle.call(this, position, velocity);
 
-  this.red = 0.8;
-  this.green = 0.8;
-  this.blue = 0.8;
   this.opacity = 0.7;
 }
 extend(FireParticle, Exhaust);
+
+Exhaust.prototype.rgbForIntensity = function(intensity) {
+  return [
+    (intensity * 200),
+    50 + (intensity * 100),
+    50 + (intensity * 100)
+  ];
+};
 
 
 /* THE GAME */
