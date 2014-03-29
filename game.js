@@ -58,22 +58,31 @@ function forXAndY(objs, func) {
   };
 }
 
-function add() {
+// What follows are a bunch of completely contextless calculations that we
+// define here because it's grossly inefficient to define them where they
+// semantically make sense. For some indication of what they're for, see where
+// they're used.
+forXAndY.aPlusHalfB = function(a, b) {
+  return a + (b * 5);
+};
+forXAndY.aPlusBTimesSpeed = function(a, b) {
+  return a + (b * game.timeDelta);
+};
+forXAndY.add = function() {
   var s = 0;
   for (var i = 0; i < arguments.length; i++) {
     s += arguments[i];
   }
   return s;
-}
-
-function subtract(a, b) {
+};
+forXAndY.subtract = function(a, b) {
   return a - b;
-}
+};
 
 function randomisedVector(vector, potentialMagnitude) {
   var angle = Math.random() * Math.PI * 2;
   var magnitude = Math.random() * potentialMagnitude;
-  return forXAndY([vector, vectorAt(angle, magnitude)], add);
+  return forXAndY([vector, vectorAt(angle, magnitude)], forXAndY.add);
 }
 
 function multiply() {
@@ -170,12 +179,12 @@ function lineAngle(line) {
 }
 
 function lineDelta(line) {
-  return forXAndY(line, subtract);
+  return forXAndY(line, forXAndY.subtract);
 }
 
 function rgbWithOpacity(rgb, opacity) {
   var rgbStrings = [];
-  for (var i = 0; i < rgb.length; i++) rgbStrings.push(rgb[i].toFixed(0));
+  for (var i = 0; i < rgb.length; rgbStrings.push(rgb[i++].toFixed(0)));
   return 'rgba(' + rgbStrings.join(',') + ',' + opacity.toString() + ')';
 }
 
@@ -261,9 +270,7 @@ Mass.prototype = {
 
   reactToVelocity: function() {
     // set position based on velocity
-    this.setPosition(forXAndY([this.position, this.velocity], function(pos, vel) {
-      return pos + (vel * game.timeDelta);
-    }));
+    this.setPosition(forXAndY([this.position, this.velocity], forXAndY.aPlusBTimesSpeed));
     this.collideWithWalls();
   },
 
@@ -277,9 +284,7 @@ Mass.prototype = {
   reactToForce: function() {
     // set velocity and position based on force
     var self = this;
-    var projectedVelocity = forXAndY([this.velocity, this.velocityDelta()], function(vel, delta) {
-      return vel + delta * game.timeDelta;
-    });
+    var projectedVelocity = forXAndY([this.velocity, this.velocityDelta()], forXAndY.aPlusBTimesSpeed);
 
     this.velocity = forXAndY([projectedVelocity], function(projected) {
       return projected * Math.pow(self.lubricant, game.timeDelta);
@@ -312,7 +317,7 @@ Mass.prototype = {
     for (i = 0; i < 50; i++) {
       var angle = Math.random() * Math.PI * 2;
       var magnitude = Math.random() * 40;
-      var velocity = forXAndY([vectorAt(angle, magnitude), this.velocity], add);
+      var velocity = forXAndY([vectorAt(angle, magnitude), this.velocity], forXAndY.add);
       (new FireParticle(this.position, velocity));
     }
   },
@@ -381,7 +386,7 @@ Tether.prototype.step = function() {
   if (this.lastInteraction === 'touch') leniency = 50;
   else leniency = 20;
 
-  if (this.unlockable && (vectorMagnitude(forXAndY([this.position, this.lastMousePosition], subtract)) < leniency)) {
+  if (this.unlockable && (vectorMagnitude(forXAndY([this.position, this.lastMousePosition], forXAndY.subtract)) < leniency)) {
     this.locked = false;
 
     if (!game.started) {
@@ -421,7 +426,7 @@ function Player(tether) {
 extend(Mass, Player);
 
 Player.prototype.step = function() {
-  this.force = forXAndY([this.tether.position, this.position], subtract);
+  this.force = forXAndY([this.tether.position, this.position], forXAndY.subtract);
   Mass.prototype.step.call(this);
 };
 
@@ -482,9 +487,7 @@ function Enemy(opts) {
 extend(Mass, Enemy);
 
 Enemy.prototype.getTargetVector = function() {
-  return forXAndY([this.target.position, this.position], function(them, us) {
-    return them - us;
-  });
+  return forXAndY([this.target.position, this.position], forXAndY.subtract);
 };
 
 Enemy.prototype.step = function() {
@@ -630,16 +633,21 @@ function FireParticle(position, velocity) {
   this.created = game.timeElapsed;
   this.teleportTo(position);
   this.velocity = velocity;
-  this.initialIntensity = vectorMagnitude(velocity) * (2 * Math.random());
   this.red = 1;
   this.green = 1;
   this.blue = 0;
   this.opacity = 1;
+
+  // We don't have to use vectorMagnitude for this; we know that FireParticle
+  // always travels in a straight line so velocity.x will always be
+  // proportional to absolute velocity (except if velocity.x is 0, which
+  // *should* never happen ha ha ha
+  this.initialIntensity = velocity.x * (2 * Math.random());
 }
 extend(Particle, FireParticle);
 
 FireParticle.prototype.getCurrentColor = function() {
-  var intensity = vectorMagnitude(this.velocity) / this.initialIntensity;
+  var intensity = this.velocity.x / this.initialIntensity;
   return rgbWithOpacity(this.rgbForIntensity(intensity), Math.pow(intensity, 0.25) * this.opacity);
 };
 
@@ -653,9 +661,7 @@ FireParticle.prototype.rgbForIntensity = function(intensity) {
 
 FireParticle.prototype.draw = function() {
   ctx.strokeStyle = this.getCurrentColor();
-  var endOfStroke = forXAndY([this.position, this.velocity], function(p, v) {
-    return p + (v * 5);
-  });
+  var endOfStroke = forXAndY([this.position, this.velocity], forXAndY.aPlusHalfB);
 
   ctx.beginPath();
   ctx.moveTo(this.position.x, this.position.y);
