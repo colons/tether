@@ -319,6 +319,7 @@ function Tether() {
   this.radius = 5;
   
   this.locked = true;
+  this.unlockable = true;
   this.rgb = [20,20,200];
 
   this.position = {
@@ -331,9 +332,22 @@ function Tether() {
   var self = this;
 
   document.addEventListener('mousemove', function(e) {
+    self.leniency = 20;
     if (e.target === canvas) {
       self.lastMousePosition = {x: e.layerX, y: e.layerY};
     }
+  });
+
+  document.addEventListener('touchend', function(e) {
+    self.locked = true;
+    self.lastMousePosition = {x: NaN, y: NaN};
+  });
+
+  document.addEventListener('touchmove', function(e) {
+    e.preventDefault();
+    self.leniency = 50;
+    touch = e.changedTouches[0];
+    self.lastMousePosition = {x: touch.pageX, y: touch.pageY};
   });
 
   return this;
@@ -341,17 +355,21 @@ function Tether() {
 extend(Mass, Tether);
 
 Tether.prototype.step = function() {
-  if (!this.locked) {
-    this.setPosition(this.lastMousePosition);
-  } else if (!game.started) {
-    if (vectorMagnitude(forXAndY([this.position, this.lastMousePosition], subtract)) < 20) {
+  if (this.unlockable && (vectorMagnitude(forXAndY([this.position, this.lastMousePosition], subtract)) < this.leniency)) {
+    this.locked = false;
+
+    if (!game.started) {
       game.start();
     }
+  }
+
+  if (!this.locked) {
+    this.setPosition(this.lastMousePosition);
   }
 };
 
 Tether.prototype.draw = function() {
-  if (!game.started) this.focus();
+  if (this.locked && this.unlockable) this.focus();
   Mass.prototype.draw.call(this);
 };
 
@@ -844,6 +862,7 @@ function Game() {
     canvas.classList.remove('hidecursor');
     self.ended = self.timeElapsed;
     self.tether.locked = true;
+    self.tether.unlockable = false;
     self.speed = self.slowSpeed;
   };
 
