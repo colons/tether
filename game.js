@@ -181,7 +181,6 @@ function initCanvas() {
 
   ctx = document.getElementById('game').getContext('2d');
   scaleCanvas();
-  window.addEventListener('resize', scaleCanvas);
 }
 
 function edgesOfCanvas() {
@@ -758,7 +757,7 @@ function Game() {
 
     var intensity = self.getIntensity();
 
-    ctx.font = (intensity * ctx.canvas.height * 5).toString() + 'px "Tulpen One" sans-serif';
+    ctx.font = (intensity * ctx.canvas.height * 5).toString() + 'px "Tulpen One", sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = rgbWithOpacity([0,0,0], intensity);
@@ -797,7 +796,7 @@ function Game() {
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = rgbWithOpacity([0,0,0], opacity);
-    ctx.font = '100px "Tulpen One" sans-serif';
+    ctx.font = '100px "Tulpen One", sans-serif';
     ctx.fillText('tether', centre.x + ctx.canvas.height/100, centre.y - ctx.canvas.height/100);
   };
 
@@ -807,7 +806,7 @@ function Game() {
     var opacity = -Math.sin((game.timeElapsed - game.ended) * 3);
     if (opacity < 0) opacity = 0;
 
-    ctx.font = (ctx.canvas.height/8).toString() + 'px "Tulpen One" sans-serif';
+    ctx.font = (ctx.canvas.height/8).toString() + 'px "Tulpen One", sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
