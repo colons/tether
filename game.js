@@ -1,5 +1,10 @@
 var game;
+var canvas;
 var ctx;
+var devicePixelRatio = window.devicePixelRatio || 1;
+var width;
+var height;
+
 
 /* UTILITIES */
 function extend(base, sub) {
@@ -13,8 +18,8 @@ function extend(base, sub) {
 
 function somewhereJustOutsideTheViewport(buffer) {
   var somewhere = {
-    x: Math.random() * ctx.canvas.width,
-    y: Math.random() * ctx.canvas.height
+    x: Math.random() * width,
+    y: Math.random() * height
   };
 
   var edgeSeed = Math.random();
@@ -23,13 +28,13 @@ function somewhereJustOutsideTheViewport(buffer) {
       somewhere.x = -buffer;
       break;
     case edgeSeed < 0.5:
-      somewhere.x = ctx.canvas.width + buffer;
+      somewhere.x = width + buffer;
       break;
     case edgeSeed < 0.75:
       somewhere.y = -buffer;
       break;
     default:
-      somewhere.y = ctx.canvas.height + buffer;
+      somewhere.y = height + buffer;
   }
   return somewhere;
 }
@@ -170,21 +175,30 @@ function rgbWithOpacity(rgb, opacity) {
 
 /* SETUP */
 function scaleCanvas() {
-  ctx.canvas.width = window.innerWidth;
-  ctx.canvas.height = window.innerHeight;
+  width = window.innerWidth;
+  height = window.innerHeight;
+
+  canvas.width = width * devicePixelRatio;
+  canvas.height = height * devicePixelRatio;
+
+  canvas.style.width = width.toString() + 'px';
+  canvas.style.height = height.toString() + 'px';
+
+  ctx.scale(devicePixelRatio, devicePixelRatio);
 }
 
 function initCanvas() {
-  ctx = document.getElementById('game').getContext('2d');
+  canvas = document.getElementById('game');
+  ctx = canvas.getContext('2d');
   scaleCanvas();
 }
 
 function edgesOfCanvas() {
   return linesFromPolygon([
     {x: 0, y: 0},
-    {x:0, y: ctx.canvas.height},
-    {x: ctx.canvas.width, y: ctx.canvas.height},
-    {x: ctx.canvas.width, y: 0},
+    {x:0, y: height},
+    {x: width, y: height},
+    {x: width, y: 0},
     {x: 0, y: 0}
   ]);
 }
@@ -308,8 +322,8 @@ function Tether() {
   this.rgb = [20,20,200];
 
   this.position = {
-    x: ctx.canvas.width / 2,
-    y: (ctx.canvas.height / 3) * 2
+    x: width / 2,
+    y: (height / 3) * 2
   };
 
   this.lastMousePosition = {x: NaN, y: NaN};
@@ -317,7 +331,7 @@ function Tether() {
   var self = this;
 
   document.addEventListener('mousemove', function(e) {
-    if (e.target === ctx.canvas) {
+    if (e.target === canvas) {
       self.lastMousePosition = {x: e.layerX, y: e.layerY};
     }
   });
@@ -351,10 +365,10 @@ function Player(tether) {
   this.radius = 10;
   this.walls = edgesOfCanvas();
   this.position = {
-    x: (ctx.canvas.width / 10) * 9,
-    y: ctx.canvas.height / 2
+    x: (width / 10) * 9,
+    y: height / 2
   };
-  this.velocity = {x: 0, y: -ctx.canvas.height/50};
+  this.velocity = {x: 0, y: -height/50};
 
   this.tether = tether;
   this.rgb = [20,20,200];
@@ -622,7 +636,7 @@ function Game() {
   };
 
   self.start = function() {
-    ctx.canvas.classList.add('hidecursor');
+    canvas.classList.add('hidecursor');
     self.tether.locked = false;
     self.player.lubricant = self.player.onceGameHasStartedLubricant;
     self.started = true;
@@ -754,11 +768,11 @@ function Game() {
 
     var intensity = self.getIntensity();
 
-    ctx.font = (intensity * ctx.canvas.height * 5).toString() + 'px "Tulpen One", sans-serif';
+    ctx.font = (intensity * height * 5).toString() + 'px "Tulpen One", sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = rgbWithOpacity([0,0,0], intensity);
-    ctx.fillText(self.score.toString(), ctx.canvas.width/2, ctx.canvas.height/2);
+    ctx.fillText(self.score.toString(), width/2, height/2);
   };
 
   self.drawParticles = function() {
@@ -785,8 +799,8 @@ function Game() {
     if (opacity < 0.001) return;
 
     var centre = {
-      x: ctx.canvas.width/2 + 80,
-      y: 2 * ctx.canvas.height/3
+      x: width/2 + 80,
+      y: 2 * height/3
     };
 
     // text
@@ -794,7 +808,7 @@ function Game() {
     ctx.textBaseline = 'middle';
     ctx.fillStyle = rgbWithOpacity([0,0,0], opacity);
     ctx.font = '100px "Tulpen One", sans-serif';
-    ctx.fillText('tether', centre.x + ctx.canvas.height/100, centre.y - ctx.canvas.height/100);
+    ctx.fillText('tether', centre.x + height/100, centre.y - height/100);
   };
 
   self.drawRestartTutorial = function() {
@@ -803,16 +817,16 @@ function Game() {
     var opacity = -Math.sin((game.timeElapsed - game.ended) * 3);
     if (opacity < 0) opacity = 0;
 
-    ctx.font = (ctx.canvas.height/8).toString() + 'px "Tulpen One", sans-serif';
+    ctx.font = (height/8).toString() + 'px "Tulpen One", sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
     ctx.fillStyle = rgbWithOpacity([0,0,0], opacity);
-    ctx.fillText('click to restart', ctx.canvas.width/2, ctx.canvas.height/2);
+    ctx.fillText('click to restart', width/2, height/2);
   };
 
   self.draw = function() {
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.clearRect(0, 0, width, height);
 
     self.drawScore();
     self.drawParticles();
@@ -827,7 +841,7 @@ function Game() {
   };
 
   self.end = function() {
-    ctx.canvas.classList.remove('hidecursor');
+    canvas.classList.remove('hidecursor');
     self.ended = self.timeElapsed;
     self.tether.locked = true;
     self.speed = self.slowSpeed;
