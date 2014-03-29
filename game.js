@@ -344,12 +344,15 @@ function Tether() {
     self.lastMousePosition = {x: NaN, y: NaN};
   });
 
-  document.addEventListener('touchmove', function(e) {
+  function handleTouch(e) {
     e.preventDefault();
     self.lastInteraction = 'touch';
     touch = e.changedTouches[0];
     self.lastMousePosition = {x: touch.pageX, y: touch.pageY};
-  });
+  }
+
+  document.addEventListener('touchstart', handleTouch);
+  document.addEventListener('touchmove', handleTouch);
 
   return this;
 }
