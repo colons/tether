@@ -216,26 +216,32 @@ Mass.prototype = {
   mass: 1,
   lubricant: 1,
   radius: 0,
-  walls: [],
+  walls: false,
+  bounciness: 0,
   rgb: [60,60,60],
 
   journeySincePreviousFrame: function() {
     return [this.positionOnPreviousFrame, this.position];
   },
 
-  collideWithWalls: function () {
-    for (var i = 0; i < this.walls.length; i++) {
-      var wall = this.walls[i];
-      // XXX move the wall towards us perpendicular to its direction by our radius
-      var intersection = getIntersection(wall, [this.positionOnPreviousFrame, this.position]);
 
-      if (intersection.onLine1 && intersection.onLine2) {
-        // XXX bounce
-        this.velocity = {x: 0, y: 0};
-        this.position.x = intersection.x;
-        this.position.y = intersection.y;
-      }
+  bounceInDimension: function(d, max) {
+    var distanceFromFarEdge = max - this.radius - this.position[d];
+    var distanceFromNearEdge = this.position[d] - this.radius;
+
+    if (distanceFromNearEdge < 0) {
+      this.velocity[d] *= -this.bounciness;
+      this.position[d] = (distanceFromNearEdge * this.bounciness) + this.radius;
+    } else if (distanceFromFarEdge < 0) {
+      this.velocity[d] *= -this.bounciness;
+      this.position[d] = max - (distanceFromFarEdge * this.bounciness) - this.radius;
     }
+  },
+
+  collideWithWalls: function () {
+    if (!this.walls) return;
+    this.bounceInDimension('x', width);
+    this.bounceInDimension('y', height);
   },
 
   setPosition: function(position) {
@@ -397,12 +403,13 @@ function Player(tether) {
   this.onceGameHasStartedLubricant = 0.99;
   this.lubricant = 1;
   this.radius = 10;
-  this.walls = edgesOfCanvas();
+  this.walls = true;
   this.teleportTo({
     x: (width / 10) * 9,
     y: height / 2
   });
   this.velocity = {x: 0, y: -height/50};
+  this.bounciness = 0.4;
 
   this.tether = tether;
   this.rgb = [20,20,200];
@@ -554,7 +561,6 @@ function Twitchy(opts) {
   this.chargeRate = 0.01;
   this.dischargeRate = 0.1;
   this.radius = 5;
-  this.walls = edgesOfCanvas();
 
   // Since the player gets a warning that we're about to spawn, it's probably
   // okay if we start with enough fuel to not quite reach our target.
@@ -900,7 +906,7 @@ function Game() {
     var opacity = -Math.sin((game.timeElapsed - game.ended) * 3);
     if (opacity < 0) opacity = 0;
 
-    ctx.font = (height/8).toString() + 'px "Tulpen One", sans-serif';
+    ctx.font = (Math.min(width/5, height/8)).toString() + 'px "Tulpen One", sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
