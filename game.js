@@ -157,7 +157,9 @@ function lineDelta(line) {
 }
 
 function rgbWithOpacity(rgb, opacity) {
-  return 'rgba(' + rgb.join(',') + ',' + opacity.toString() + ')';
+  var rgbStrings = [];
+  for (var i = 0; i < rgb.length; i++) rgbStrings.push(rgb[i].toFixed(0));
+  return 'rgba(' + rgbStrings.join(',') + ',' + opacity.toString() + ')';
 }
 
 /* SETUP */
@@ -773,14 +775,55 @@ function Game() {
     }
   };
 
+  self.drawLogo = function() {
+    var centre = {
+      x: ctx.canvas.width/2,
+      y: ctx.canvas.height/3
+    };
+
+    // text
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = '#000';
+    ctx.font = (ctx.canvas.height / 8).toString() + 'px "Tulpen One" sans-serif';
+    ctx.fillText('tether', centre.x, centre.y);
+
+    // fire
+    function seededRandom(variance, seed) {
+      // like Math.random() in that it returns values between 0 and 1, but
+      // unlike Math.random in that the values it returns are deterministic.
+      return (Math.sin((game.timeElapsed + seed) * variance) + 1) / 2;
+    }
+
+    function drawWith(i) {
+      var angle = seededRandom(1/10, i*3) * (Math.PI * 1.5);
+      var magnitude = (seededRandom(1, i*2) * ctx.canvas.height/10) + ctx.canvas.height/4;
+
+      var endVector = vectorAt(angle, magnitude);
+      var startVector = vectorAt(angle, magnitude * 0.2);
+
+      var startOfStroke = forXAndY([centre, startVector], add);
+      var endOfStroke = forXAndY([centre, endVector], add);
+
+      var red = seededRandom(0.2, i) * 255;
+      var green = seededRandom(0.3, i) * 200;
+      var blue = seededRandom(0.5, i) * 255;
+
+      ctx.strokeStyle = rgbWithOpacity([red,green,blue], 1);
+      console.log(ctx.strokeStyle);
+      ctx.beginPath();
+      ctx.moveTo(startOfStroke.x, startOfStroke.y);
+      ctx.lineTo(endOfStroke.x, endOfStroke.y);
+      ctx.stroke();
+    }
+
+    for (i = 0; i < Math.PI * 2; i += Math.PI/30) {
+      drawWith(i);
+    }
+  };
+
   self.draw = function() {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    ctx.fillStyle = '#000';
-    ctx.font = '10px fixed';
-    ctx.fillText(self.timeElapsed.toFixed(2), 5, 10);
 
     self.drawScore();
     self.drawParticles();
@@ -789,6 +832,8 @@ function Game() {
     self.cable.draw();
     self.tether.draw();
     self.player.draw();
+
+    if (!self.started) self.drawLogo();
   };
 
   self.end = function() {
