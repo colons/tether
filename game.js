@@ -830,6 +830,20 @@ function Game() {
     }
   };
 
+  self.drawRestartTutorial = function() {
+    if (!self.ended) return;
+
+    var opacity = -Math.sin((game.timeElapsed - game.ended) * 3);
+    if (opacity < 0) opacity = 0;
+
+    ctx.font = (ctx.canvas.height/8).toString() + 'px "Tulpen One" sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    ctx.fillStyle = rgbWithOpacity([0,0,0], opacity);
+    ctx.fillText('click to restart', ctx.canvas.width/2, ctx.canvas.height/2);
+  };
+
   self.draw = function() {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
@@ -842,6 +856,7 @@ function Game() {
     self.player.draw();
 
     self.drawLogo();
+    self.drawRestartTutorial();
   };
 
   self.end = function() {
