@@ -442,7 +442,7 @@ function Twitchy(opts) {
 
   // Give just enough fuel to get away from the edge of the screen; to start
   // with a full load of fuel would be super, super mean.
-  this.fuel = 0.25;
+  this.fuel = 0.2;
 
   // Calibrated to pretty close to the player.
   this.mass = 100;
@@ -653,7 +653,7 @@ function Game() {
       var enemyPool = [Idiot, Twitchy];
       var enemyType = enemyPool[Math.floor(Math.random() * enemyPool.length)];
       var enemy = new enemyType({target: target});
-      enemy.position = somewhereJustOutsideTheViewport(enemy.radius + self.player.radius);
+      enemy.position = somewhereJustOutsideTheViewport(enemy.radius);
       self.enemies.push(enemy);
     }
   };
