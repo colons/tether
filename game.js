@@ -716,6 +716,7 @@ function Game() {
   };
 
   self.incrementScore = function(incr) {
+    if (self.ended) return;
     self.lastPointScored = self.timeElapsed;
     self.score += incr;
     self.player.radius += incr/2;
@@ -757,10 +758,8 @@ function Game() {
       else if (enemy.spawnAt <= self.timeElapsed) enemy.spawned = true;
     }
 
-    if (!self.ended) {
-      self.checkForCableContact();
-      self.checkForEnemyContact();
-    }
+    self.checkForCableContact();
+    if (!self.ended) self.checkForEnemyContact();
 
     self.draw();
   };
