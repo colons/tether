@@ -674,6 +674,7 @@ function Game() {
         vectorMagnitude(lineDelta([enemy.position, mass.position])) <
         (enemy.radius + mass.radius)
       ) {
+        enemy.die();
         return mass;
       }
     }
