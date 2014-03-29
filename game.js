@@ -62,12 +62,10 @@ function forXAndY(objs, func) {
 // define here because it's grossly inefficient to define them where they
 // semantically make sense. For some indication of what they're for, see where
 // they're used.
-forXAndY.aPlusHalfB = function(a, b) {
-  return a + (b * 5);
-};
-forXAndY.aPlusBTimesSpeed = function(a, b) {
-  return a + (b * game.timeDelta);
-};
+forXAndY.aPlusHalfB = function(a, b) {return a + (b * 5);};
+forXAndY.aPlusBTimesSpeed = function(a, b) {return a + (b * game.timeDelta);};
+forXAndY.subtract = function(a, b) {return a - b;};
+forXAndY.invSubtract = function(a, b) {return b - a;};
 forXAndY.add = function() {
   var s = 0;
   for (var i = 0; i < arguments.length; i++) {
@@ -75,22 +73,11 @@ forXAndY.add = function() {
   }
   return s;
 };
-forXAndY.subtract = function(a, b) {
-  return a - b;
-};
 
 function randomisedVector(vector, potentialMagnitude) {
   var angle = Math.random() * Math.PI * 2;
   var magnitude = Math.random() * potentialMagnitude;
   return forXAndY([vector, vectorAt(angle, magnitude)], forXAndY.add);
-}
-
-function multiply() {
-  var p = 0;
-  for (var i = 0; i < arguments.length; i++) {
-    p *= arguments[i];
-  }
-  return p;
 }
 
 function getIntersection(line1, line2) {
@@ -179,7 +166,7 @@ function lineAngle(line) {
 }
 
 function lineDelta(line) {
-  return forXAndY(line, forXAndY.subtract);
+  return forXAndY(line, forXAndY.invSubtract);
 }
 
 function rgbWithOpacity(rgb, opacity) {
@@ -761,6 +748,8 @@ function Game() {
   };
 
   self.step = function() {
+    if (DEBUG) ctx.clearRect(0, 0, width, height);
+
     var now = new Date().getTime();
 
     if (!self.lastStepped) {
@@ -797,8 +786,8 @@ function Game() {
       else if (enemy.spawnAt <= self.timeElapsed) enemy.spawned = true;
     }
 
-    self.checkForCableContact();
     if (!self.ended) self.checkForEnemyContact();
+    self.checkForCableContact();
 
     self.draw();
   };
@@ -848,19 +837,55 @@ function Game() {
   };
 
   self.checkForEnemyContactWith = function(mass) {
+    var massPositionDelta = lineDelta([mass.positionOnPreviousFrame, mass.position]);
+
     for (var i = 0; i < self.enemies.length; i++) {
       var enemy = self.enemies[i];
       if (enemy.died || !enemy.spawned) {
         continue;
       }
 
-      if (
-        vectorMagnitude(lineDelta([enemy.position, mass.position])) <
-        (enemy.radius + mass.radius)
-      ) {
-        enemy.die();
-        return mass;
+      var enemyPositionDelta = lineDelta([enemy.positionOnPreviousFrame, enemy.position]);
+
+      // Iterate through a bunch of places our objects should have been in the
+      // last frame and see if any of them collide.
+      if (DEBUG) {
+        ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+        ctx.beginPath();
       }
+
+      for (var progress = 0; progress < 1; progress += 1/40) {
+        enemyPosition = {
+          x: enemy.positionOnPreviousFrame.x + enemyPositionDelta.x * progress,
+          y: enemy.positionOnPreviousFrame.y + enemyPositionDelta.y * progress
+        };
+
+        massPosition = {
+          x: mass.positionOnPreviousFrame.x + massPositionDelta.x * progress,
+          y: mass.positionOnPreviousFrame.y + massPositionDelta.y * progress
+        };
+
+        if (DEBUG) {
+          ctx.moveTo(enemyPosition.x, enemyPosition.y);
+          ctx.lineTo(massPosition.x, massPosition.y);
+        }
+
+        var distance = lineDelta([enemyPosition, massPosition]);
+
+        if (
+          Math.pow(distance.x, 2) + Math.pow(distance.y, 2) <
+          Math.pow((enemy.radius + mass.radius), 2)
+        ) {
+          // We're not moving anything, the objects stopped moving as soon as
+          // there was contact, so setPosition is the wrong thing to do.
+          enemy.position = enemyPosition;
+          mass.position = massPosition;
+          enemy.die();
+          return mass;
+        }
+      }
+
+      if (DEBUG) ctx.stroke();
     }
   };
 
@@ -965,7 +990,7 @@ function Game() {
   };
 
   self.draw = function() {
-    ctx.clearRect(0, 0, width, height);
+    if (!DEBUG) ctx.clearRect(0, 0, width, height);
 
     self.drawScore();
     self.drawParticles();
