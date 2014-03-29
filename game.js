@@ -538,9 +538,9 @@ function Exhaust(source) {
   FireParticle.call(this, position, velocity);
 
   this.red = 0.8;
-  this.green = 0.5;
-  this.blue = 0.3;
-  this.opacity = 0.5;
+  this.green = 0.8;
+  this.blue = 0.8;
+  this.opacity = 0.7;
 }
 extend(FireParticle, Exhaust);
 
