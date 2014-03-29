@@ -313,7 +313,6 @@ Tether.prototype.step = function() {
     this.setPosition(this.lastMousePosition);
   } else if (!game.started) {
     if (vectorMagnitude(forXAndY([this.position, this.lastMousePosition], subtract)) < 20) {
-      console.log('starting');
       game.start();
     } else if (Math.random() < 0.03 * game.speed) {
       this.explode();
@@ -552,35 +551,36 @@ extend(FireParticle, Exhaust);
 /* THE GAME */
 function Game() {
   var self = this;
-  game = self;
 
-  self.score = 0;
-  self.lastPointScored = 0;
-  self.timeElapsed = 0;
-  self.normalSpeed = 0.4;
-  self.slowSpeed = self.normalSpeed / 100;
-  self.speed = self.normalSpeed;
-  self.started = false;
+  self.reset = function() {
+    self.score = 0;
+    self.lastPointScored = 0;
+    self.timeElapsed = 0;
+    self.normalSpeed = 0.4;
+    self.slowSpeed = self.normalSpeed / 100;
+    self.speed = self.normalSpeed;
+    self.started = false;
 
-  var enemies = [];
-  self.particles = [];
+    self.enemies = [];
+    self.particles = [];
 
-  var tether = new Tether();
-  var player = new Player(tether);
-  var cable = new Cable(tether, player);
+    self.tether = new Tether();
+    self.player = new Player(self.tether);
+    self.cable = new Cable(self.tether, self.player);
+  };
 
   self.start = function() {
     ctx.canvas.classList.add('hidecursor');
-    tether.locked = false;
-    player.lubricant = player.onceGameHasStartedLubricant;
+    self.tether.locked = false;
+    self.player.lubricant = self.player.onceGameHasStartedLubricant;
     self.started = true;
   };
 
   self.incrementScore = function(incr) {
     self.lastPointScored = self.timeElapsed;
     self.score += incr;
-    player.radius += incr/2;
-    tether.radius += incr/4;
+    self.player.radius += incr/2;
+    self.tether.radius += incr/4;
   };
 
   self.getIntensity = function() {
@@ -606,13 +606,13 @@ function Game() {
       self.timeElapsed += self.speed;
     }
 
-    tether.step();
-    player.step();
+    self.tether.step();
+    self.player.step();
 
     self.stepParticles();
 
-    for (var i = 0; i < enemies.length; i++) {
-      enemies[i].step();
+    for (var i = 0; i < self.enemies.length; i++) {
+      self.enemies[i].step();
     }
 
     if (!self.ended) {
@@ -626,20 +626,20 @@ function Game() {
   self.spawnEnemies = function() {
     if (Math.random() < 0.02 * game.speed) {
       var target;
-      if (Math.random() > 0.5) target = player;
-      else target = tether;
+      if (Math.random() > 0.5) target = self.player;
+      else target = self.tether;
 
       var enemyPool = [Idiot, Twitchy];
       var thisEnemy = enemyPool[Math.floor(Math.random() * enemyPool.length)];
-      enemies.push(new thisEnemy(target));
+      self.enemies.push(new thisEnemy(target));
     }
   };
 
   self.checkForCableContact = function() {
-    var cableAreaCovered = cable.areaCoveredThisStep();
+    var cableAreaCovered = self.cable.areaCoveredThisStep();
 
-    for (var i = 0; i < enemies.length; i++) {
-      var enemy = enemies[i];
+    for (var i = 0; i < self.enemies.length; i++) {
+      var enemy = self.enemies[i];
       if (enemy.died) {
         continue;
       }
@@ -663,8 +663,8 @@ function Game() {
   };
 
   self.checkForEnemyContactWith = function(mass) {
-    for (var i = 0; i < enemies.length; i++) {
-      var enemy = enemies[i];
+    for (var i = 0; i < self.enemies.length; i++) {
+      var enemy = self.enemies[i];
       if (enemy.died) {
         continue;
       }
@@ -679,7 +679,7 @@ function Game() {
   };
 
   self.checkForEnemyContact = function() {
-    var deadMass = self.checkForEnemyContactWith(tether) || self.checkForEnemyContactWith(player);
+    var deadMass = self.checkForEnemyContactWith(self.tether) || self.checkForEnemyContactWith(self.player);
     if (deadMass) {
       deadMass.rgb = [200,20,20];
       deadMass.explode();
@@ -708,8 +708,8 @@ function Game() {
   };
 
   self.drawEnemies = function() {
-    for (var i = 0; i < enemies.length; i++) {
-      var enemy = enemies[i];
+    for (var i = 0; i < self.enemies.length; i++) {
+      var enemy = self.enemies[i];
       enemy.draw();
     }
   };
@@ -727,20 +727,29 @@ function Game() {
     self.drawParticles();
     self.drawEnemies();
 
-    cable.draw();
-    tether.draw();
-    player.draw();
+    self.cable.draw();
+    self.tether.draw();
+    self.player.draw();
   };
 
   self.end = function() {
     ctx.canvas.classList.remove('hidecursor');
     self.ended = true;
-    tether.locked = true;
+    self.tether.locked = true;
     self.speed = self.slowSpeed;
   };
+
+  self.reset();
 }
 
 /* FIRE */
 initCanvas();
 game = new Game();
+
+document.addEventListener('mousedown', function(e) {
+  if (game.ended) {
+    game.reset();
+  }
+});
+
 setInterval(game.step, 10);
