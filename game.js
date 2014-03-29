@@ -185,7 +185,7 @@ function lineDelta(line) {
 function rgbWithOpacity(rgb, opacity) {
   var rgbStrings = [];
   for (var i = 0; i < rgb.length; rgbStrings.push(rgb[i++].toFixed(0)));
-  return 'rgba(' + rgbStrings.join(',') + ',' + opacity.toString() + ')';
+  return 'rgba(' + rgbStrings.join(',') + ',' + opacity.toFixed(2) + ')';
 }
 
 /* SETUP */
