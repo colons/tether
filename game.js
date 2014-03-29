@@ -383,12 +383,11 @@ function Cable(tether, player) {
 }
 
 /* ENEMIES */
-function Enemy(target) {
+function Enemy(opts) {
   Mass.call(this);
   this.died = null;
-  this.target = target;
   this.exhausts = [];
-  this.position = somewhereJustOutsideTheViewport(this.radius);
+  this.target = opts.target;
 }
 extend(Mass, Enemy);
 
@@ -412,9 +411,9 @@ Enemy.prototype.die = function() {
   game.incrementScore(1);
 };
 
-function Idiot(target) {
+function Idiot(opts) {
   // A very stupid enemy. Basically the diamond from Geometry Wars.
-  Enemy.call(this, target);
+  Enemy.call(this, opts);
 
   var size = 0.5 + Math.random();
 
@@ -441,13 +440,13 @@ Idiot.prototype.step = function() {
 
 // A hyperactive enemy, thrusting occasionally in the player's direction.
 // Unlike Idiot, compensates for her own velocity.
-function Twitchy(target) {
-  Enemy.call(this, target);
+function Twitchy(opts) {
+  Enemy.call(this, opts);
   this.charging = false;
 
   // Give just enough fuel to get away from the edge of the screen; to start
   // with a full load of fuel would be super, super mean.
-  this.fuel = 0.05;
+  this.fuel = 0.25;
 
   // Calibrated to pretty close to the player.
   this.mass = 100;
@@ -656,8 +655,10 @@ function Game() {
       else target = self.tether;
 
       var enemyPool = [Idiot, Twitchy];
-      var thisEnemy = enemyPool[Math.floor(Math.random() * enemyPool.length)];
-      self.enemies.push(new thisEnemy(target));
+      var enemyType = enemyPool[Math.floor(Math.random() * enemyPool.length)];
+      var enemy = new enemyType({target: target});
+      enemy.position = somewhereJustOutsideTheViewport(enemy.radius + self.player.radius);
+      self.enemies.push(enemy);
     }
   };
 
