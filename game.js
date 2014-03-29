@@ -685,7 +685,7 @@ function Game() {
 
     for (var i = 0; i < self.enemies.length; i++) {
       var enemy = self.enemies[i];
-      if (enemy.died) {
+      if (enemy.died || !enemy.spawned) {
         continue;
       }
 
@@ -710,7 +710,7 @@ function Game() {
   self.checkForEnemyContactWith = function(mass) {
     for (var i = 0; i < self.enemies.length; i++) {
       var enemy = self.enemies[i];
-      if (enemy.died) {
+      if (enemy.died || !enemy.spawned) {
         continue;
       }
 
