@@ -163,6 +163,10 @@ function scaleCanvas() {
 }
 
 function initCanvas() {
+  // XXX lock width and height at this point so that scrollbars appear when the
+  // window resizes, which should be enough of a clue that we don't adapt
+  // dynamically to the size of the player's screen.
+
   ctx = document.getElementById('game').getContext('2d');
   scaleCanvas();
   window.addEventListener('resize', scaleCanvas);
