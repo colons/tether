@@ -243,6 +243,12 @@ Mass.prototype = {
     this.position = position;
   },
 
+  teleportTo: function(position) {
+    // like setPosition, but doesn't leave a trace of a journey.
+    this.positionOnPreviousFrame = position;
+    this.position = position;
+  },
+
   reactToVelocity: function() {
     // set position based on velocity
     this.setPosition(forXAndY([this.position, this.velocity], function(pos, vel) {
@@ -324,11 +330,10 @@ function Tether() {
   this.unlockable = true;
   this.rgb = [20,20,200];
 
-  this.position = {
+  this.teleportTo({
     x: width / 2,
     y: (height / 3) * 2
-  };
-  this.positionOnPreviousFrame = this.position;
+  });
 
   this.lastMousePosition = {x: NaN, y: NaN};
   this.lastInteraction = null;
@@ -393,11 +398,10 @@ function Player(tether) {
   this.lubricant = 1;
   this.radius = 10;
   this.walls = edgesOfCanvas();
-  this.position = {
+  this.teleportTo({
     x: (width / 10) * 9,
     y: height / 2
-  };
-  this.velocity = {x: 0, y: -height/50};
+  });
 
   this.tether = tether;
   this.rgb = [20,20,200];
@@ -613,7 +617,7 @@ function FireParticle(position, velocity) {
   Particle.call(this);
   this.lubricant = 0.9;
   this.created = game.timeElapsed;
-  this.position = position;
+  this.teleportTo(position);
   this.velocity = velocity;
   this.initialIntensity = vectorMagnitude(velocity) * (2 * Math.random());
   this.red = 1;
@@ -772,7 +776,7 @@ function Game() {
         target: target,
         spawnAt: self.timeElapsed + self.spawnWarningDuration
       });
-      enemy.position = somewhereJustOutsideTheViewport(enemy.radius);
+      enemy.teleportTo(somewhereJustOutsideTheViewport(enemy.radius));
       self.enemies.push(enemy);
     }
   };
