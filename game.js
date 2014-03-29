@@ -475,10 +475,6 @@ function Twitchy(opts) {
   Enemy.call(this, opts);
   this.charging = false;
 
-  // Give just enough fuel to get away from the edge of the screen; to start
-  // with a full load of fuel would be super, super mean.
-  this.fuel = 0.2;
-
   // Calibrated to pretty close to the player.
   this.mass = 100;
   this.lubricant = 0.92;
@@ -486,6 +482,11 @@ function Twitchy(opts) {
   this.dischargeRate = 0.1;
   this.radius = 5;
   this.walls = edgesOfCanvas();
+
+  // Since the player gets a warning that we're about to spawn, it's probably
+  // okay if we start with enough fuel to not quite reach our target.
+  this.fuel = 0.9;
+
 }
 extend(Enemy, Twitchy);
 
