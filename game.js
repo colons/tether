@@ -383,7 +383,10 @@ function Enemy(opts) {
   Mass.call(this);
   this.died = null;
   this.exhausts = [];
+  this.spawned = false;
+
   this.target = opts.target;
+  this.spawnAt = opts.spawnAt;
 }
 extend(Mass, Enemy);
 
@@ -405,6 +408,19 @@ Enemy.prototype.die = function() {
   this.explode();
   this.died = game.timeElapsed;
   game.incrementScore(1);
+};
+
+Enemy.prototype.drawWarning = function() {
+  // as a number between 0 and 1
+  var timeUntilSpawn = (this.spawnAt - game.timeElapsed) / game.spawnWarningDuration;
+
+  var radius = timeUntilSpawn * 700;
+
+  ctx.strokeStyle = rgbWithOpacity(this.rgb, 1 - timeUntilSpawn);
+  ctx.beginPath();
+  ctx.arc(this.position.x, this.position.y, radius, 0, Math.PI*2);
+  ctx.stroke();
+  ctx.closePath();
 };
 
 function Idiot(opts) {
@@ -580,6 +596,7 @@ function Game() {
     self.normalSpeed = 0.4;
     self.slowSpeed = self.normalSpeed / 100;
     self.speed = self.normalSpeed;
+    self.spawnWarningDuration = 50;
     self.started = false;
 
     self.enemies = [];
@@ -633,7 +650,9 @@ function Game() {
     self.stepParticles();
 
     for (var i = 0; i < self.enemies.length; i++) {
-      self.enemies[i].step();
+      var enemy = self.enemies[i];
+      if (enemy.spawned) enemy.step();
+      else if (enemy.spawnAt <= self.timeElapsed) enemy.spawned = true;
     }
 
     if (!self.ended) {
@@ -652,7 +671,10 @@ function Game() {
 
       var enemyPool = [Idiot, Twitchy];
       var enemyType = enemyPool[Math.floor(Math.random() * enemyPool.length)];
-      var enemy = new enemyType({target: target});
+      var enemy = new enemyType({
+        target: target,
+        spawnAt: self.timeElapsed + self.spawnWarningDuration
+      });
       enemy.position = somewhereJustOutsideTheViewport(enemy.radius);
       self.enemies.push(enemy);
     }
@@ -734,7 +756,8 @@ function Game() {
   self.drawEnemies = function() {
     for (var i = 0; i < self.enemies.length; i++) {
       var enemy = self.enemies[i];
-      enemy.draw();
+      if (enemy.spawned) enemy.draw();
+      else enemy.drawWarning();
     }
   };
 
