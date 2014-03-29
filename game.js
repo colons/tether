@@ -607,7 +607,7 @@ function Game() {
   var self = this;
 
   self.reset = function() {
-    self.ended = false;
+    self.ended = null;
     self.score = 0;
     self.lastPointScored = 0;
     self.timeElapsed = 0;
@@ -846,7 +846,7 @@ function Game() {
 
   self.end = function() {
     ctx.canvas.classList.remove('hidecursor');
-    self.ended = true;
+    self.ended = self.timeElapsed;
     self.tether.locked = true;
     self.speed = self.slowSpeed;
   };
