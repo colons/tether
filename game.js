@@ -402,6 +402,7 @@ function Player(tether) {
     x: (width / 10) * 9,
     y: height / 2
   });
+  this.velocity = {x: 0, y: -height/50};
 
   this.tether = tether;
   this.rgb = [20,20,200];
