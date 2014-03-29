@@ -688,7 +688,7 @@ function Game() {
 
     var intensity = self.getIntensity();
 
-    ctx.font = (intensity * ctx.canvas.height * 5).toString() + 'px sans-serif';
+    ctx.font = (intensity * ctx.canvas.height * 5).toString() + 'px "Tulpen One" sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = rgbWithOpacity([0,0,0], intensity);
