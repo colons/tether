@@ -189,23 +189,24 @@ function rgbWithOpacity(rgb, opacity) {
 }
 
 /* SETUP */
-function scaleCanvas() {
+function scaleCanvas(ratio) {
+  canvas.width = width * ratio;
+  canvas.height = height * ratio;
+
+  ctx.scale(ratio, ratio);
+}
+
+function initCanvas() {
   width = window.innerWidth;
   height = window.innerHeight;
 
-  canvas.width = width * devicePixelRatio;
-  canvas.height = height * devicePixelRatio;
+  canvas = document.getElementById('game');
+  ctx = canvas.getContext('2d');
 
   canvas.style.width = width.toString() + 'px';
   canvas.style.height = height.toString() + 'px';
 
-  ctx.scale(devicePixelRatio, devicePixelRatio);
-}
-
-function initCanvas() {
-  canvas = document.getElementById('game');
-  ctx = canvas.getContext('2d');
-  scaleCanvas();
+  scaleCanvas(devicePixelRatio);
 }
 
 function edgesOfCanvas() {
