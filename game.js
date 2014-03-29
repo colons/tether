@@ -328,11 +328,12 @@ function Tether() {
   };
 
   this.lastMousePosition = {x: NaN, y: NaN};
+  this.lastInteraction = null;
 
   var self = this;
 
   document.addEventListener('mousemove', function(e) {
-    self.leniency = 20;
+    self.lastInteraction = 'mouse';
     if (e.target === canvas) {
       self.lastMousePosition = {x: e.layerX, y: e.layerY};
     }
@@ -345,7 +346,7 @@ function Tether() {
 
   document.addEventListener('touchmove', function(e) {
     e.preventDefault();
-    self.leniency = 50;
+    self.lastInteraction = 'touch';
     touch = e.changedTouches[0];
     self.lastMousePosition = {x: touch.pageX, y: touch.pageY};
   });
@@ -355,7 +356,11 @@ function Tether() {
 extend(Mass, Tether);
 
 Tether.prototype.step = function() {
-  if (this.unlockable && (vectorMagnitude(forXAndY([this.position, this.lastMousePosition], subtract)) < this.leniency)) {
+  var leniency;
+  if (this.lastInteraction === 'touch') leniency = 50;
+  else leniency = 20;
+
+  if (this.unlockable && (vectorMagnitude(forXAndY([this.position, this.lastMousePosition], subtract)) < leniency)) {
     this.locked = false;
 
     if (!game.started) {
@@ -840,7 +845,7 @@ function Game() {
     ctx.textBaseline = 'middle';
 
     ctx.fillStyle = rgbWithOpacity([0,0,0], opacity);
-    ctx.fillText('click to restart', width/2, height/2);
+    ctx.fillText({touch: 'tap', mouse: 'click'}[self.tether.lastInteraction] + ' to restart', width/2, height/2);
   };
 
   self.draw = function() {
