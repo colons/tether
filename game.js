@@ -10,6 +10,7 @@ var height;
 
 /* UTILITIES */
 function extend(base, sub) {
+  // http://stackoverflow.com/a/4389429
   sub.prototype = Object.create(base.prototype);
   sub.prototype.constructor = sub;
   Object.defineProperty(sub.prototype, 'constructor', {
@@ -118,6 +119,7 @@ function getIntersection(line1, line2) {
 }
 
 function pointInPolygon(point, polygon) {
+  // http://www.webmasterworld.com/javascript/3551991.htm
   var i, j;
   var c = 0;
   var numberOfPoints = polygon.length;
@@ -158,6 +160,7 @@ function linesFromPolygon(polygon) {
   }
   return polyLine;
 }
+
 function lineAngle(line) {
   return vectorAngle({
     x: line[1].x - line[0].x,
