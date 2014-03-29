@@ -1,3 +1,5 @@
+var DEBUG = (window.location.hash === '#DEBUG');
+
 var game;
 var canvas;
 var ctx;
@@ -326,6 +328,7 @@ function Tether() {
     x: width / 2,
     y: (height / 3) * 2
   };
+  this.positionOnPreviousFrame = this.position;
 
   this.lastMousePosition = {x: NaN, y: NaN};
   this.lastInteraction = null;
@@ -413,10 +416,10 @@ function Cable(tether, player) {
 
   self.areaCoveredThisStep = function() {
     return [
-      tether.position,
       tether.positionOnPreviousFrame,
       player.positionOnPreviousFrame,
-      player.position
+      player.position,
+      tether.position
     ];
   };
 
@@ -431,6 +434,22 @@ function Cable(tether, player) {
     ctx.moveTo(line[0].x, line[0].y);
     ctx.lineTo(line[1].x, line[1].y);
     ctx.stroke();
+    if (DEBUG) self.drawAreaCoveredThisStep();
+  };
+
+  self.drawAreaCoveredThisStep = function() {
+    ctx.beginPath();
+    ctx.fillStyle = rgbWithOpacity([127,127,127], 0.3);
+    var areaCovered = self.areaCoveredThisStep();
+    ctx.moveTo(areaCovered[0].x, areaCovered[0].y);
+
+    for (var i = 1; i < areaCovered.length; i++) {
+      ctx.lineTo(areaCovered[i].x, areaCovered[i].y);
+    }
+
+    ctx.lineTo(areaCovered[0].x, areaCovered[0].y);
+    ctx.fill();
+    ctx.closePath();
   };
 }
 
@@ -464,6 +483,19 @@ Enemy.prototype.die = function() {
   this.explode();
   this.died = game.timeElapsed;
   game.incrementScore(1);
+};
+
+Enemy.prototype.draw = function() {
+  if (DEBUG && !this.died) this.drawTargetVector();
+  Mass.prototype.draw.call(this);
+};
+
+Enemy.prototype.drawTargetVector = function() {
+  ctx.strokeStyle = rgbWithOpacity([127,127,127], 0.7);
+  ctx.beginPath();
+  ctx.moveTo(this.position.x, this.position.y);
+  ctx.lineTo(this.target.position.x, this.target.position.y);
+  ctx.stroke();
 };
 
 Enemy.prototype.drawWarning = function() {
