@@ -865,17 +865,29 @@ function Game() {
   self.drawLogo = function() {
     var opacity;
     if (!game.started) opacity = 1;
-    else opacity = 1 - game.timeElapsed/50;
+    else opacity = Math.pow(1 - game.timeElapsed/50, 3);
 
     if (opacity < 0.001) return;
 
-    var centre = {
-      x: width/2 + 80,
-      y: 2 * height/3
-    };
-
     // text
-    ctx.textAlign = 'left';
+    var centre;
+
+    if (width < 500) {
+      // Prevent the logo clipping off the right side of the screen on narrow
+      // devices.
+      centre = {
+        x: width/2,
+        y: height/3
+      };
+      ctx.textAlign = 'center';
+    } else {
+      centre = {
+        x: width/2 + 80,
+        y: 2 * height/3
+      };
+      ctx.textAlign = 'left';
+    }
+
     ctx.textBaseline = 'middle';
     ctx.fillStyle = rgbWithOpacity([0,0,0], opacity);
     ctx.font = '100px "Tulpen One", sans-serif';
