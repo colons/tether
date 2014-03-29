@@ -660,6 +660,8 @@ FireParticle.prototype.rgbForIntensity = function(intensity) {
 };
 
 FireParticle.prototype.draw = function() {
+  if (Math.random() < 0.1 * game.timeDelta) return; // flicker
+
   ctx.strokeStyle = this.getCurrentColor();
   var endOfStroke = forXAndY([this.position, this.velocity], forXAndY.aPlusHalfB);
 
