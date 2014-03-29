@@ -553,6 +553,7 @@ function Game() {
   var self = this;
 
   self.reset = function() {
+    self.ended = false;
     self.score = 0;
     self.lastPointScored = 0;
     self.timeElapsed = 0;
