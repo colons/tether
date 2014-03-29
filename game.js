@@ -270,7 +270,6 @@ Mass.prototype = {
     ctx.fillStyle = this.getCurrentColor();
     ctx.beginPath();
     ctx.arc(this.position.x, this.position.y, this.radius, 0, Math.PI*2);
-    ctx.closePath();
     ctx.fill();
   },
 
@@ -281,6 +280,18 @@ Mass.prototype = {
       var velocity = forXAndY([vectorAt(angle, magnitude), this.velocity], add);
       (new FireParticle(this.position, velocity));
     }
+  },
+
+  focus: function() {
+    ctx.strokeStyle = rgbWithOpacity([0,0,0], 0.6);
+    var radius = 40 + Math.sin(game.timeElapsed / 10) * 10;
+    baseAngle = (game.timeElapsed / 30) + Math.cos(game.timeElapsed / 10) * 0.2;
+    ctx.beginPath();
+    ctx.arc(this.position.x, this.position.y, radius, baseAngle, baseAngle + Math.PI * 0.5);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(this.position.x, this.position.y, radius, baseAngle + Math.PI, baseAngle + Math.PI * 1.5);
+    ctx.stroke();
   }
 };
 
@@ -295,7 +306,7 @@ function Tether() {
 
   this.position = {
     x: ctx.canvas.width / 2,
-    y: ctx.canvas.height / 2
+    y: (ctx.canvas.height / 3) * 2
   };
 
   this.lastMousePosition = {x: NaN, y: NaN};
@@ -318,10 +329,13 @@ Tether.prototype.step = function() {
   } else if (!game.started) {
     if (vectorMagnitude(forXAndY([this.position, this.lastMousePosition], subtract)) < 20) {
       game.start();
-    } else if (Math.random() < 0.03 * game.speed) {
-      this.explode();
     }
   }
+};
+
+Tether.prototype.draw = function() {
+  if (!game.started) this.focus();
+  Mass.prototype.draw.call(this);
 };
 
 
@@ -334,10 +348,10 @@ function Player(tether) {
   this.radius = 10;
   this.walls = edgesOfCanvas();
   this.position = {
-    x: (ctx.canvas.width / 10),
-    y: (ctx.canvas.height / 3) * 2
+    x: (ctx.canvas.width / 10) * 9,
+    y: ctx.canvas.height / 2
   };
-  this.velocity = {x: 0, y: ctx.canvas.height/50};
+  this.velocity = {x: 0, y: -ctx.canvas.height/50};
 
   this.tether = tether;
   this.rgb = [20,20,200];
@@ -374,7 +388,6 @@ function Cable(tether, player) {
     ctx.moveTo(line[0].x, line[0].y);
     ctx.lineTo(line[1].x, line[1].y);
     ctx.stroke();
-    ctx.closePath();
   };
 }
 
@@ -420,7 +433,6 @@ Enemy.prototype.drawWarning = function() {
   ctx.beginPath();
   ctx.arc(this.position.x, this.position.y, radius, 0, Math.PI*2);
   ctx.stroke();
-  ctx.closePath();
 };
 
 function Idiot(opts) {
@@ -506,7 +518,6 @@ Twitchy.prototype.draw = function() {
     ctx.beginPath();
     var radius = this.radius * 1/this.fuel;
     ctx.arc(this.position.x, this.position.y, radius, 0, Math.PI*2);
-    ctx.closePath();
     ctx.fill();
   }
 };
@@ -555,7 +566,6 @@ FireParticle.prototype.draw = function() {
   ctx.moveTo(this.position.x, this.position.y);
   ctx.lineTo(endOfStroke.x, endOfStroke.y);
   ctx.stroke();
-  ctx.closePath();
 };
 
 
@@ -612,6 +622,7 @@ function Game() {
     self.tether.locked = false;
     self.player.lubricant = self.player.onceGameHasStartedLubricant;
     self.started = true;
+    self.timeElapsed = 0;
   };
 
   self.incrementScore = function(incr) {
@@ -639,9 +650,10 @@ function Game() {
   };
 
   self.step = function() {
+    self.timeElapsed += self.speed;
+
     if (self.started) {
       self.spawnEnemies();
-      self.timeElapsed += self.speed;
     }
 
     self.tether.step();
