@@ -558,9 +558,9 @@ extend(Particle, FireParticle);
 FireParticle.prototype.getCurrentColor = function() {
   var intensity = vectorMagnitude(this.velocity) / this.initialIntensity;
   return rgbWithOpacity([
-    (Math.pow(intensity, 0.2) * 255 * this.red).toFixed(0),
-    (intensity * 200 * this.green).toFixed(0),
-    (intensity * 200 * this.blue).toFixed(0)
+    (Math.pow(intensity, 0.2) * 255 * this.red),
+    (intensity * 200 * this.green),
+    (intensity * 200 * this.blue)
   ], Math.pow(intensity, 0.25) * this.opacity);
 };
 
@@ -782,6 +782,12 @@ function Game() {
   };
 
   self.drawLogo = function() {
+    var opacity;
+    if (!game.started) opacity = 1;
+    else opacity = 1 - game.timeElapsed/50;
+
+    if (opacity < 0.001) return;
+
     var centre = {
       x: ctx.canvas.width/2,
       y: ctx.canvas.height/3
@@ -790,7 +796,7 @@ function Game() {
     // text
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
-    ctx.fillStyle = '#000';
+    ctx.fillStyle = rgbWithOpacity([0,0,0], opacity);
     ctx.font = (ctx.canvas.height / 8).toString() + 'px "Tulpen One" sans-serif';
     ctx.fillText('tether', centre.x + ctx.canvas.height/100, centre.y - ctx.canvas.height/100);
 
@@ -800,8 +806,8 @@ function Game() {
       var baseMagnitude = Math.random();
 
       var baseVector = vectorAt(angle, baseMagnitude);
-      var relativeMagnitude = baseMagnitude * Math.pow(Math.max(Math.abs(baseVector.x), Math.abs(baseVector.y * 1.5)), 2);
-      var magnitude = relativeMagnitude * ctx.canvas.height/10;
+      var relativeMagnitude = baseMagnitude * Math.pow(Math.max(Math.abs(baseVector.x * 0.7), Math.abs(baseVector.y)), 2);
+      var magnitude = relativeMagnitude * ctx.canvas.height/5;
 
       var endVector = vectorAt(angle, magnitude);
       var startVector = vectorAt(angle, magnitude * 0.2);
@@ -812,7 +818,7 @@ function Game() {
       startOfStroke = randomisedVector(startOfStroke, ctx.canvas.height/100);
       endOfStroke = randomisedVector(endOfStroke, ctx.canvas.height/40);
 
-      ctx.strokeStyle = rgbWithOpacity([10,10,10], relativeMagnitude);
+      ctx.strokeStyle = rgbWithOpacity([0,0,0], opacity * relativeMagnitude);
       ctx.beginPath();
       ctx.moveTo(startOfStroke.x, startOfStroke.y);
       ctx.lineTo(endOfStroke.x, endOfStroke.y);
@@ -835,7 +841,7 @@ function Game() {
     self.tether.draw();
     self.player.draw();
 
-    if (!self.started) self.drawLogo();
+    self.drawLogo();
   };
 
   self.end = function() {
