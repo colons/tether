@@ -65,6 +65,14 @@ function subtract(a, b) {
   return a - b;
 }
 
+function multiply() {
+  var p = 0;
+  for (var i = 0; i < arguments.length; i++) {
+    p *= arguments[i];
+  }
+  return p;
+}
+
 function getIntersection(line1, line2) {
   var denominator, a, b, numerator1, numerator2, result = {
     x: null,
@@ -469,10 +477,27 @@ Twitchy.prototype.step = function() {
 };
 
 Twitchy.prototype.getCurrentColor = function() {
-  if (this.charging) this.rgb = [30,30,200];
+  if (this.charging) {
+    this.rgb = [30,30,200];
+  }
   else this.rgb = [200,30,30];
 
   return Enemy.prototype.getCurrentColor.call(this);
+};
+
+Twitchy.prototype.draw = function() {
+  Enemy.prototype.draw.call(this);
+
+  if ((!this.charging) || this.fuel <= 0) return;
+  else {
+    // represent how much fuel we have
+    ctx.fillStyle = rgbWithOpacity([30,30,30], this.getOpacity() * this.fuel);
+    ctx.beginPath();
+    var radius = this.radius * 1/this.fuel;
+    ctx.arc(this.position.x, this.position.y, radius, 0, Math.PI*2);
+    ctx.closePath();
+    ctx.fill();
+  }
 };
 
 
