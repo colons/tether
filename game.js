@@ -789,6 +789,10 @@ function Game() {
       var journey = enemy.journeySincePreviousFrame();
       var cableLines = linesFromPolygon(cableAreaCovered);
 
+      if (pointInPolygon(enemy.position, cableAreaCovered)) {
+        enemy.die();
+      }
+
       for (var ci = 0; ci < cableLines.length; ci++) {
         var intersection = getIntersection(journey, cableLines[ci]);
 
@@ -796,10 +800,6 @@ function Game() {
           enemy.die();
           break;
         }
-      }
-
-      if (pointInPolygon(enemy.position, cableAreaCovered)) {
-        enemy.die();
       }
     }
   };
