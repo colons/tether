@@ -789,45 +789,16 @@ function Game() {
     if (opacity < 0.001) return;
 
     var centre = {
-      x: ctx.canvas.width/2,
-      y: ctx.canvas.height/3
+      x: ctx.canvas.width/2 + 80,
+      y: 2 * ctx.canvas.height/3
     };
 
     // text
     ctx.textAlign = 'left';
-    ctx.textBaseline = 'alphabetic';
+    ctx.textBaseline = 'middle';
     ctx.fillStyle = rgbWithOpacity([0,0,0], opacity);
-    ctx.font = (ctx.canvas.height / 8).toString() + 'px "Tulpen One" sans-serif';
+    ctx.font = '100px "Tulpen One" sans-serif';
     ctx.fillText('tether', centre.x + ctx.canvas.height/100, centre.y - ctx.canvas.height/100);
-
-    // fire
-    function drawWith(i) {
-      var angle = Math.sin(game.timeElapsed/200 + i) * (Math.PI * 0.75) + (Math.PI * 0.75);
-      var baseMagnitude = Math.random();
-
-      var baseVector = vectorAt(angle, baseMagnitude);
-      var relativeMagnitude = baseMagnitude * Math.pow(Math.max(Math.abs(baseVector.x * 0.7), Math.abs(baseVector.y)), 2);
-      var magnitude = relativeMagnitude * ctx.canvas.height/5;
-
-      var endVector = vectorAt(angle, magnitude);
-      var startVector = vectorAt(angle, magnitude * 0.2);
-
-      var startOfStroke = forXAndY([centre, startVector], add);
-      var endOfStroke = forXAndY([centre, endVector], add);
-
-      startOfStroke = randomisedVector(startOfStroke, ctx.canvas.height/100);
-      endOfStroke = randomisedVector(endOfStroke, ctx.canvas.height/40);
-
-      ctx.strokeStyle = rgbWithOpacity([0,0,0], opacity * relativeMagnitude);
-      ctx.beginPath();
-      ctx.moveTo(startOfStroke.x, startOfStroke.y);
-      ctx.lineTo(endOfStroke.x, endOfStroke.y);
-      ctx.stroke();
-    }
-
-    for (i = 0; i < Math.PI * 2; i += Math.PI/70) {
-      drawWith(i);
-    }
   };
 
   self.drawRestartTutorial = function() {
