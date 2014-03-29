@@ -467,7 +467,7 @@ Twitchy.prototype.step = function() {
 
 Twitchy.prototype.getCurrentColor = function() {
   if (this.charging) this.rgb = [30,30,200];
-  else this.rgb = [30,200,30];
+  else this.rgb = [200,30,30];
 
   return Enemy.prototype.getCurrentColor.call(this);
 };
