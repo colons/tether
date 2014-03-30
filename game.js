@@ -1390,9 +1390,9 @@ function Game() {
     for (var i = 0; i < recentAchievements.length; i++) {
       ctx.font = '15px monospace';
       ctx.textAlign = 'right';
-      ctx.textBaseline = 'alphabetic';
-      ctx.fillStyle = rgbWithOpacity([0,0,0], 1);  // XXX this should probably fade out
-      ctx.fillText('Unlocked achievement: ' + recentAchievements[i].name, width - 5, height - 7 - 15 * i);
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = rgbWithOpacity([0,0,0], 1);  // XXX this should probably fade out or something
+      ctx.fillText('Unlocked achievement: ' + recentAchievements[i].name, width - 7, 5 + 15 * i);
     }
   };
 
