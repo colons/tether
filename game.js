@@ -953,7 +953,7 @@ function EndlessRandomWave() {Wave.call(this);}
 extend(Wave, EndlessRandomWave);
 
 EndlessRandomWave.prototype.spawnEnemies = function() {
-  if (Math.random() < 0.02 * game.timeDelta) {
+  if (game.timeElapsed > this.startedAt + 100 && Math.random() < 0.02 * game.timeDelta) {
     var target = this.randomTarget();
 
     var enemyPool = [Idiot, Twitchy, Drifter];
@@ -988,6 +988,7 @@ function Game() {
     self.waveIndex = 0;
     self.waves = [
       tutorialFor(Drifter, 100, {size: 2}),
+
       aBunchOf(Drifter, 5, 100),
 
       tutorialFor(Idiot, 100, {size: 2}),
