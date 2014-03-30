@@ -302,7 +302,7 @@ Mass.prototype = {
 
   getOpacity: function() {
     if (!this.died) return 1;
-    else return 1 / (game.timeElapsed - this.died);
+    else return 1 / Math.max(1, (game.timeElapsed - this.died));
   },
 
   getCurrentColor: function() {
