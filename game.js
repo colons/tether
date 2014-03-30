@@ -216,6 +216,8 @@ function edgesOfCanvas() {
   ]);
 }
 
+initCanvas();
+
 /* GAME OBJECTS */
 // The basic object of our physics engine. A circle with mass, position, velocity and forces.
 function Mass() {}
@@ -1045,7 +1047,7 @@ var achievements = {
   },
   lowRes: {
     name: 'Cramped',  // XXX implement this
-    description: 'Score ten points at 500x500px or less'
+    description: 'Score ten points at 500x500px or less (currently ' + width + 'x' + height + ')'
   },
   handsFree: {
     name: 'Hands-free',  // XXX implement this
@@ -1548,7 +1550,6 @@ function Game() {
 
 /* FIRE */
 syncAchievements();
-initCanvas();
 game = new Game();
 
 function restartGameIfEnded(e) {
