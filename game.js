@@ -731,9 +731,9 @@ Exhaust.prototype.rgbForIntensity = function(intensity) {
 /* THE GAME */
 function Game() {
   var self = this;
-  self.background = new Background();
 
   self.reset = function() {
+    self.background = new Background();
     self.ended = null;
     self.score = 0;
     self.lastPointScored = 0;
