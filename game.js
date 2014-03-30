@@ -20,12 +20,15 @@ function extend(base, sub) {
   });
 }
 
-function somewhereJustOutsideTheViewport(buffer) {
-  var somewhere = {
+function somewhereInTheViewport() {
+  return {
     x: Math.random() * width,
     y: Math.random() * height
   };
+}
 
+function somewhereJustOutsideTheViewport(buffer) {
+  var somewhere = somewhereInTheViewport();
   var edgeSeed = Math.random();
   switch (true) {
     case edgeSeed < 0.25:
@@ -217,6 +220,7 @@ Mass.prototype = {
   mass: 1,
   lubricant: 1,
   radius: 0,
+  visibleRadius: null,
   walls: false,
   bounciness: 0,
   rgb: [60,60,60],
@@ -295,9 +299,13 @@ Mass.prototype = {
   },
 
   draw: function() {
+    var radius = this.radius;
+    if (this.visibleRadius !== null) radius = this.visibleRadius;
+
     ctx.fillStyle = this.getCurrentColor();
     ctx.beginPath();
-    ctx.arc(this.position.x, this.position.y, this.radius, 0, Math.PI*2);
+
+    ctx.arc(this.position.x, this.position.y, radius, 0, Math.PI*2);
     ctx.fill();
   },
 
@@ -321,6 +329,36 @@ Mass.prototype = {
     ctx.arc(this.position.x, this.position.y, radius, baseAngle + Math.PI, baseAngle + Math.PI * 1.5);
     ctx.stroke();
   }
+};
+
+
+// Aesthetic garbage
+function BackgroundPart(i) {
+  Mass.call(this);
+  this.visibleRadius = 2 * Math.max(width, height) / i;
+  this.radius = 1;
+  this.bounciness = 1;
+  this.velocity = vectorAt(Math.PI * 2 * Math.random(), i * Math.random() * 0.2);
+  this.teleportTo(somewhereInTheViewport());
+  this.walls = true;
+  this.color = rgbWithOpacity([127,127,127], 0.005 * i);
+}
+extend(Mass, BackgroundPart);
+BackgroundPart.prototype.getCurrentColor = function() {
+  return this.color;
+};
+
+function Background() {
+  this.parts = [];
+  for (var i = 0; i < 10; i++) {
+    this.parts.push(new BackgroundPart(i));
+  }
+}
+Background.prototype.draw = function() {
+  for (var i = 0; i < this.parts.length; this.parts[i++].draw());
+};
+Background.prototype.step = function() {
+  for (var i = 0; i < this.parts.length; this.parts[i++].step());
 };
 
 
@@ -693,6 +731,7 @@ Exhaust.prototype.rgbForIntensity = function(intensity) {
 /* THE GAME */
 function Game() {
   var self = this;
+  self.background = new Background();
 
   self.reset = function() {
     self.ended = null;
@@ -770,6 +809,8 @@ function Game() {
       self.timeElapsed += self.timeDelta;
       self.lastStepped = now;
     }
+
+    self.background.step();
 
     if (self.started) {
       self.spawnEnemies();
@@ -992,6 +1033,7 @@ function Game() {
   self.draw = function() {
     if (!DEBUG) ctx.clearRect(0, 0, width, height);
 
+    self.background.draw();
     self.drawScore();
     self.drawParticles();
     self.drawEnemies();
