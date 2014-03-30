@@ -1046,7 +1046,7 @@ var achievements = {
     description: 'Be alive while fifteen enemies are on screen'
   },
   lowRes: {
-    name: 'Cramped',  // XXX implement this
+    name: 'Cramped',
     description: 'Score ten points at 500x500px or less (currently ' + width + 'x' + height + ')'
   },
   handsFree: {
@@ -1158,6 +1158,10 @@ function Game() {
     if (self.ended) return;
     self.lastPointScored = self.timeElapsed;
     self.score += incr;
+
+    if (self.score >= 10 && width <= 500 && height <= 500) {
+      unlockAchievement('lowRes');
+    }
   };
 
   self.getIntensity = function() {
