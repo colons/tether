@@ -1042,6 +1042,10 @@ var achievements = {
   noisy: {
     name: 'Noisy',
     description: 'Be alive while fifteen enemies are on screen'
+  },
+  handsFree: {
+    name: 'Hands-free',  // XXX implement this
+    description: 'Kill five enemies without moving the tether'
   }
 };
 
