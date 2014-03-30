@@ -1107,6 +1107,7 @@ function Game() {
 
       if (pointInPolygon(enemy.position, cableAreaCovered)) {
         enemy.die();
+        continue;
       }
 
       for (var ci = 0; ci < cableLines.length; ci++) {
