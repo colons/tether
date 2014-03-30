@@ -1421,7 +1421,7 @@ function Game() {
     ctx.textBaseline = 'middle';
 
     ctx.fillStyle = rgbWithOpacity([0,0,0], opacity);
-    ctx.fillText({touch: 'tap', mouse: 'click'}[self.tether.lastInteraction] + ' to restart', width/2, height/2);
+    ctx.fillText({touch: 'tap', mouse: 'click'}[self.tether.lastInteraction] + ' to retry', width/2, height/2);
   };
 
   self.drawAchievementNotifications = function() {
