@@ -588,6 +588,9 @@ Enemy.prototype.drawTargetVector = function() {
 };
 
 Enemy.prototype.drawWarning = function() {
+  // Something resembling a more complicated reimplementation of this lives on
+  // Idiot. Please be aware of this when tweaking.
+
   // as a number between 0 and 1
   var timeUntilSpawn = (this.spawnAt - game.timeElapsed) / this.wave.spawnWarningDuration;
 
@@ -659,6 +662,7 @@ function Idiot(opts) {
   this.mass = size;
   this.lubricant = 0.9;
   this.radius = size * 10;
+  this.shadowRadius = this.radius + 3;
   this.rgb = [255,255,255];
   this.rgbWarning = [50,50,50];
 }
@@ -688,39 +692,69 @@ Idiot.prototype.getCalmness = function() {
   return 1 / Math.pow(1/this.getRelativeDistance(), 1/4);
 };
 
-Idiot.prototype.getPupilColor = function() {
+Idiot.prototype.drawWarning = function() {
+  // Not, strictly speaking, DRY. It would probably be possible to make
+  // Enemy.drawWarning() general-purpose enough to subsume this
+  // reimplementation, but Idiot has enough complications that it seems worth
+  // doing a custom job.
+
+  var timeUntilSpawn = (this.spawnAt - game.timeElapsed) / this.wave.spawnWarningDuration;
+
+  var radius = (this.shadowRadius)/2 + Math.pow(timeUntilSpawn, 2) * 700;
+  var coreRadius = (this.shadowRadius)/2 + Math.pow(timeUntilSpawn, 2) * 700;
+  ctx.lineWidth = 2 * (this.shadowRadius)/2 * Math.pow(1-timeUntilSpawn, 3);
+
+  ctx.strokeStyle = rgbWithOpacity(this.rgbWarning || this.rgb, (1 - timeUntilSpawn) * this.getOpacity());
+  ctx.beginPath();
+  ctx.arc(this.position.x, this.position.y, radius, 0, Math.PI*2);
+  ctx.stroke();
+  ctx.lineWidth = 1;
+};
+
+
+Idiot.prototype.getIrisColor = function() {
   var red = 0;
   if (Math.random() < Math.pow(1 - this.getCalmness(), 4) * game.timeDelta) red = 255;
   return rgbWithOpacity([red, 0, 0], this.getOpacity());
+};
+
+Idiot.prototype.awakeness = function() {
+  var timeAlive = game.timeElapsed - this.spawnAt;
+  var awakeness = (1 - (1/(timeAlive/3 + 1)));
+};
+
+Idiot.prototype.drawIris = function() {
+  var awakeness = this.awakeness();
+  var targetVector = this.getTargetVector();
+  var relativeDistance = this.getRelativeDistance();
+
+  var irisVector = vectorAt(
+    vectorAngle(targetVector),
+    awakeness * this.radius * Math.pow(relativeDistance, 1/2) * 0.7
+  );
+
+  var centreOfIris = forXAndY([this.position, irisVector], forXAndY.add);
+
+  irisRadius = (this.radius * 1/3) * awakeness;
+
+  ctx.fillStyle = this.getIrisColor();
+  ctx.beginPath();
+  ctx.arc(centreOfIris.x, centreOfIris.y, irisRadius, 0, Math.PI*2);
+  ctx.fill();
 };
 
 Idiot.prototype.draw = function() {
   // Draw the shadow.
   ctx.fillStyle = rgbWithOpacity([0,0,0], this.getOpacity() * 0.5);
   ctx.beginPath();
-  ctx.arc(this.position.x, this.position.y, this.radius + 3, 0, Math.PI*2);
+  ctx.arc(this.position.x, this.position.y, this.shadowRadius, 0, Math.PI*2);
   ctx.fill();
 
   Enemy.prototype.draw.call(this);
 
-  if (this.died) return;  // dead idiots should not have pupils
+  if (this.died) return;  // dead idiots should not have an iris
 
-  var targetVector = this.getTargetVector();
-  var relativeDistance = this.getRelativeDistance();
-
-  var pupilVector = vectorAt(
-    vectorAngle(targetVector),
-    this.radius * Math.pow(relativeDistance, 1/2) * 0.7
-  );
-  var centreOfPupil = forXAndY([this.position, pupilVector], forXAndY.add);
-
-  irisRadius = this.radius * 1/3;
-
-  // Draw the pupil
-  ctx.fillStyle = this.getPupilColor();
-  ctx.beginPath();
-  ctx.arc(centreOfPupil.x, centreOfPupil.y, irisRadius, 0, Math.PI*2);
-  ctx.fill();
+  this.drawIris();
 };
 
 
@@ -1147,9 +1181,9 @@ function Game() {
 
     self.waveIndex = waveIndex || 0;
     self.waves = [
-      tutorialFor(Drifter, {size: 2}),
-      aBunchOf(Drifter, 2, 100),
-      aBunchOf(Drifter, 2, 5),
+      // tutorialFor(Drifter, {size: 2}),
+      // aBunchOf(Drifter, 2, 100),
+      // aBunchOf(Drifter, 2, 5),
 
       tutorialFor(Idiot, {size: 2}),
       aBunchOf(Idiot, 4, 100),
