@@ -1037,8 +1037,8 @@ var achievements = {
     name: 'Weapon of choice',
     description: 'Kill an enemy without dying yourself'
   },
-  homeRun: {
-    name: 'Home Run',
+  impact: {
+    name: 'Concussion',
     description: 'Feel the impact'
   },
   noisy: {
@@ -1309,7 +1309,7 @@ function Game() {
             var relativeVelocity = lineDelta([mass.velocity, enemy.velocity]);
             var impact = vectorMagnitude(relativeVelocity) / maximumPossibleDistanceBetweenTwoMasses;
 
-            if (impact > 0.04) unlockAchievement('homeRun');
+            if (impact > 0.04) unlockAchievement('impact');
             if (INFO) console.log('impact: ' + impact.toString());
           }
 
