@@ -391,6 +391,7 @@ function Tether() {
 
   this.lastMousePosition = {x: NaN, y: NaN};
   this.lastInteraction = null;
+  this.pointsScoredSinceLastInteraction = 0;
 
   var self = this;
 
@@ -419,6 +420,13 @@ function Tether() {
   return this;
 }
 extend(Mass, Tether);
+
+Tether.prototype.setPosition = function(position) {
+  Mass.prototype.setPosition.call(this, position);
+  if (this.position !== this.positionOnPreviousFrame) {
+    this.pointsScoredSinceLastInteraction = 0;
+  }
+};
 
 Tether.prototype.step = function() {
   var leniency;
@@ -1050,8 +1058,8 @@ var achievements = {
     description: 'Score ten points at 500x500px or less (currently ' + width + 'x' + height + ')'
   },
   handsFree: {
-    name: 'Hands-free',  // XXX implement this
-    description: 'Score five points without moving the tether'
+    name: 'Hands-free',
+    description: 'Score three points without moving the tether'
   }
 };
 
@@ -1158,9 +1166,14 @@ function Game() {
     if (self.ended) return;
     self.lastPointScored = self.timeElapsed;
     self.score += incr;
+    self.tether.pointsScoredSinceLastInteraction += incr;
 
     if (self.score >= 10 && width <= 500 && height <= 500) {
       unlockAchievement('lowRes');
+    }
+
+    if (self.tether.pointsScoredSinceLastInteraction >= 3) {
+      unlockAchievement('handsFree');
     }
   };
 
