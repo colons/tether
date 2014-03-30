@@ -1049,7 +1049,7 @@ var achievements = {
   },
   handsFree: {
     name: 'Hands-free',  // XXX implement this
-    description: 'Kill five enemies without moving the tether'
+    description: 'Score five points without moving the tether'
   }
 };
 
