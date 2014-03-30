@@ -1412,7 +1412,7 @@ function Game() {
 
       ctx.textAlign = 'right';
       ctx.textBaseline = 'top';
-      ctx.fillStyle = rgbWithOpacity([0,0,0], visibility);  // XXX this should probably fade out or something
+      ctx.fillStyle = rgbWithOpacity([0,0,0], visibility);
       ctx.font = '17px monospace';
 
       var sink = -50 * (1 - visibility);  // how far off the top of the screen they should fall.
