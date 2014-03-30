@@ -1054,6 +1054,10 @@ var achievements = {
     name: "You're coming with me",
     description: 'Take solace in your mutual destruction'
   },
+  introduction: {
+    name: 'How to play',
+    description: 'Die with one point'
+  },
   kill: {
     name: 'Weapon of choice',
     description: 'Kill an enemy without dying yourself'
@@ -1359,6 +1363,7 @@ function Game() {
       deadMass.rgb = [200,20,20];
       deadMass.explode();
       unlockAchievement('die');
+      if (game.score === 1) unlockAchievement('introduction');
       game.end();
     }
   };
