@@ -1330,21 +1330,11 @@ function Game() {
     // text
     var centre;
 
-    if (width < 500) {
-      // Prevent the logo clipping off the right side of the screen on narrow
-      // devices.
-      centre = {
-        x: width/2,
-        y: height/3
-      };
-      ctx.textAlign = 'center';
-    } else {
-      centre = {
-        x: width/2 + 80,
-        y: 2 * height/3
-      };
-      ctx.textAlign = 'left';
-    }
+    centre = {
+      x: width/2,
+      y: height/3
+    };
+    ctx.textAlign = 'center';
 
     ctx.textBaseline = 'middle';
     ctx.fillStyle = rgbWithOpacity([0,0,0], opacity);
