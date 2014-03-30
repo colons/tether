@@ -1189,9 +1189,11 @@ function Game() {
         ctx.beginPath();
       }
 
-      for (var progress = 0; progress < 1; progress += (Math.min(enemy.radius, mass.radius))/Math.max(
+      // We don't want to run unnecessary collision checks, so we decide how
+      // many to run based on the velocities and radii of the objects involved.
+      for (var progress = 0; progress < 1; progress += (Math.min(enemy.radius, mass.radius))/(2 * Math.max(
         enemyPositionDelta.x, enemyPositionDelta.y, massPositionDelta.x, massPositionDelta.y, 1
-      )) {
+      ))) {
         enemyPosition = {
           x: enemy.positionOnPreviousFrame.x + enemyPositionDelta.x * progress,
           y: enemy.positionOnPreviousFrame.y + enemyPositionDelta.y * progress
