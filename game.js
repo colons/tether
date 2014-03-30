@@ -735,23 +735,24 @@ function Wave() {
   this.complete = false;
   this.doneSpawningEnemies = false;
   this.spawnWarningDuration = 50;
+  this.boredomCompensation = 0;
   this.startedAt = game.timeElapsed;
 }
 
 Wave.prototype.step = function() {
   this.spawnEnemies();
 
-  var remainingLivingEnemies = 0;
+  this.remainingLivingEnemies = 0;
 
   for (var i = 0; i < this.enemies.length; i++) {
     var enemy = this.enemies[i];
     if (enemy.spawned) enemy.step();
     else if (enemy.spawnAt <= game.timeElapsed) enemy.spawned = true;
 
-    if (!enemy.died) remainingLivingEnemies++;
+    if (!enemy.died) this.remainingLivingEnemies++;
   }
 
-  if (this.doneSpawningEnemies && remainingLivingEnemies === 0) this.complete = true;
+  if (this.doneSpawningEnemies && this.remainingLivingEnemies === 0) this.complete = true;
 };
 
 Wave.prototype.randomTarget = function() {
@@ -771,8 +772,8 @@ Wave.prototype.spawnEnemies = function() {
   if (this.doneSpawningEnemies) return;
 
   var remaininUnspawnedEnemies = 0;
-
-  var totalDelay = 0;
+  var totalDelay = this.boredomCompensation;
+  var compensatedForBoredom = false;
 
   for (var i = 0; i < this.spawns.length; i++) {
     var spawn = this.spawns[i];
@@ -781,7 +782,23 @@ Wave.prototype.spawnEnemies = function() {
 
     if (spawn.spawned) continue;
 
-    if (totalDelay <= (game.timeElapsed - this.startedAt)) {
+    var timeUntilSpawn = totalDelay - (game.timeElapsed - this.startedAt);
+
+    if ((!compensatedForBoredom) && this.remainingLivingEnemies === 0) {
+      // We should spawn something sooner than we normally would so the player
+      // does not get bored.
+
+      compensatedForBoredom = true;
+
+      // Do not actually follow through on this if i === 0 because we don't
+      // ever want to skip a wave's initial delay.
+      if (i !== 0) {
+        this.boredomCompensation += timeUntilSpawn;
+        timeUntilSpawn -= this.boredomCompensation;
+      }
+    }
+
+    if (timeUntilSpawn <= 0) {
       var opts = spawn.opts || {};
 
       opts.target = spawn.target || this.randomTarget();
@@ -790,10 +807,12 @@ Wave.prototype.spawnEnemies = function() {
 
       var enemy = new spawn.type(opts);
 
-      enemy.teleportTo({
-        x: spawn.pos[0] * width,
-        y: spawn.pos[1] * height
-      });
+      if (spawn.pos) {
+        enemy.teleportTo({
+          x: spawn.pos[0] * width,
+          y: spawn.pos[1] * height
+        });
+      } else enemy.teleportTo(somewhereInTheViewport());
 
       this.enemies.push(enemy);
 
@@ -807,30 +826,63 @@ Wave.prototype.spawnEnemies = function() {
 };
 
 
+// One instance of enemyType in a consistent position.
+function tutorialFor(enemyType, delay, enemyOpts) {
+  function Tutorial() {
+    Wave.call(this);
+    this.spawns = [{
+        delay: delay,
+        type:enemyType,
+        pos: [1/2, 1/5],
+        opts: enemyOpts || {}
+    }];
+  }
+  extend(Wave, Tutorial);
+  return Tutorial;
+}
 
+
+// count instances of enemyType spread out at interval.
+function aBunchOf(enemyType, count, interval) {
+  function ABunch() {
+    Wave.call(this);
+    this.spawns = [];
+
+    for (var i = 0; i < count; i++) {
+      this.spawns.push({
+        delay: interval * (i + 1),
+        type: enemyType
+      });
+    }
+  }
+  extend(Wave, ABunch);
+  return ABunch;
+}
+
+
+// Spawn a bunch of enemies in neat lines.
 function Rows() {
   Wave.call(this);
   this.spawns = [
-    {delay: 5, type:Twitchy, pos: [1/5, 1/5], target: game.player},
-    {delay: 5, type:Twitchy, pos: [2/5, 1/5], target: game.player},
-    {delay: 5, type:Twitchy, pos: [3/5, 1/5], target: game.player},
-    {delay: 5, type:Twitchy, pos: [4/5, 1/5], target: game.player},
+    {delay: 0, type: Idiot, pos: [1/5, 4/5], target: game.player, opts: {size: 2}},
+    {delay: 5, type: Idiot, pos: [1/5, 3/5], target: game.player, opts: {size: 2}},
+    {delay: 5, type: Idiot, pos: [1/5, 2/5], target: game.player, opts: {size: 2}},
+    {delay: 5, type: Idiot, pos: [1/5, 1/5], target: game.player, opts: {size: 2}},
 
-    {delay: 50, type:Twitchy, pos: [4/5, 4/5], target: game.tether},
-    {delay: 5,  type:Twitchy, pos: [3/5, 4/5], target: game.tether},
-    {delay: 5,  type:Twitchy, pos: [2/5, 4/5], target: game.tether},
-    {delay: 5,  type:Twitchy, pos: [1/5, 4/5], target: game.tether},
+    {delay: 50, type: Idiot, pos: [4/5, 1/5], target: game.tether, opts: {size: 0.5}},
+    {delay: 5,  type: Idiot, pos: [4/5, 2/5], target: game.tether, opts: {size: 0.5}},
+    {delay: 5,  type: Idiot, pos: [4/5, 3/5], target: game.tether, opts: {size: 0.5}},
+    {delay: 5,  type: Idiot, pos: [4/5, 4/5], target: game.tether, opts: {size: 0.5}},
 
-    {delay: 50, type:Idiot, pos: [1/5, 4/5], target: game.tether, opts: {size: 2}},
-    {delay: 5,  type:Idiot, pos: [1/5, 3/5], target: game.tether, opts: {size: 2}},
-    {delay: 5,  type:Idiot, pos: [1/5, 2/5], target: game.tether, opts: {size: 2}},
-    {delay: 5,  type:Idiot, pos: [1/5, 1/5], target: game.tether, opts: {size: 2}},
+    {delay: 100, type: Twitchy, pos: [4/5, 4/5], target: game.tether},
+    {delay: 5,   type: Twitchy, pos: [3/5, 4/5], target: game.tether},
+    {delay: 5,   type: Twitchy, pos: [2/5, 4/5], target: game.tether},
+    {delay: 5,   type: Twitchy, pos: [1/5, 4/5], target: game.tether},
 
-    {delay: 50, type:Idiot, pos: [4/5, 1/5], target: game.tether, opts: {size: 0.5}},
-    {delay: 5,  type:Idiot, pos: [4/5, 2/5], target: game.tether, opts: {size: 0.5}},
-    {delay: 5,  type:Idiot, pos: [4/5, 3/5], target: game.tether, opts: {size: 0.5}},
-    {delay: 5,  type:Idiot, pos: [4/5, 4/5], target: game.tether, opts: {size: 0.5}}
-
+    {delay: 50, type: Twitchy, pos: [1/5, 1/5], target: game.player},
+    {delay: 5,  type: Twitchy, pos: [2/5, 1/5], target: game.player},
+    {delay: 5,  type: Twitchy, pos: [3/5, 1/5], target: game.player},
+    {delay: 5,  type: Twitchy, pos: [4/5, 1/5], target: game.player}
   ];
 }
 extend(Wave, Rows);
@@ -846,9 +898,7 @@ extend(Wave, EndlessRandomWave);
 
 EndlessRandomWave.prototype.spawnEnemies = function() {
   if (Math.random() < 0.02 * game.timeDelta) {
-    var target;
-    if (Math.random() > 0.5) target = game.player;
-    else target = game.tether;
+    var target = this.randomTarget();
 
     var enemyPool = [Idiot, Twitchy];
     var enemyType = enemyPool[Math.floor(Math.random() * enemyPool.length)];
@@ -880,7 +930,16 @@ function Game() {
     self.started = false;
 
     self.waveIndex = 0;
-    self.waves = [Rows, EndlessRandomWave];
+    self.waves = [
+      tutorialFor(Idiot, 100, {size: 2}),
+      aBunchOf(Idiot, 5, 100),
+      aBunchOf(Idiot, 5, 30),
+      tutorialFor(Twitchy, 100),
+      aBunchOf(Twitchy, 5, 50),
+      aBunchOf(Twitchy, 5, 20),
+      // Rows,
+      EndlessRandomWave
+    ];
     self.wave = undefined;
 
     self.particles = [];
