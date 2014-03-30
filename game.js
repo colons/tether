@@ -591,12 +591,14 @@ Enemy.prototype.drawWarning = function() {
   // as a number between 0 and 1
   var timeUntilSpawn = (this.spawnAt - game.timeElapsed) / this.wave.spawnWarningDuration;
 
-  var radius = timeUntilSpawn * 700;
+  var radius = (this.visibleRadius || this.radius)/2 + Math.pow(timeUntilSpawn, 2) * 700;
+  ctx.lineWidth = 2 * (this.visibleRadius || this.radius)/2 * Math.pow(1-timeUntilSpawn, 3);
 
   ctx.strokeStyle = rgbWithOpacity(this.rgbWarning || this.rgb, 1 - timeUntilSpawn);
   ctx.beginPath();
   ctx.arc(this.position.x, this.position.y, radius, 0, Math.PI*2);
   ctx.stroke();
+  ctx.lineWidth = 1;
 };
 
 // Basically the diamond from Geometry Wars.
