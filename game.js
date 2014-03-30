@@ -433,7 +433,10 @@ Tether.prototype.step = function() {
 
   if (!this.locked) {
     this.setPosition(this.lastMousePosition);
+  } else {
+    this.setPosition(this.position);
   }
+
 };
 
 Tether.prototype.draw = function() {
