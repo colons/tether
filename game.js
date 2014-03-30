@@ -879,6 +879,7 @@ Wave.prototype.step = function() {
     if (!enemy.died) this.remainingLivingEnemies++;
   }
 
+  if (this.remainingLivingEnemies >= 15) unlockAchievement('noisy');
   if (this.doneSpawningEnemies && this.remainingLivingEnemies === 0 && !this.hasEnemiesWorthDrawing) this.complete = true;
 };
 
@@ -1023,17 +1024,21 @@ function autoWave(difficulty) {
 /* ACHIEVEMENTS *
  * because it wouldn't be worth playing more than twice without 'em */
 var achievements = {
-  kill: {
-    name: 'Kill',
-    description: 'Play a video game'
-  },
   die: {
-    name: 'Die',
-    description: 'Succumb to the inevitable'
+    name: "You're coming with me",
+    description: 'Take solace in your mutual destruction'
+  },
+  kill: {
+    name: 'Weapon of choice',
+    description: 'Kill an enemy without dying yourself'
   },
   homeRun: {
     name: 'Home Run',
-    description: 'Hit an enemy at speed' // XXX implement this
+    description: 'Feel the impact'
+  },
+  noisy: {
+    name: 'Noisy',
+    description: 'Be alive while fifteen enemies are on screen'
   }
 };
 
@@ -1281,6 +1286,16 @@ function Game() {
           enemy.position = enemyPosition;
           mass.position = massPosition;
           enemy.die(false);
+
+          // We only want this achievement to count if you hit it with Player.
+          if (mass === this.player) {
+            var relativeVelocity = lineDelta([mass.velocity, enemy.velocity]);
+            var impact = vectorMagnitude(relativeVelocity) / maximumPossibleDistanceBetweenTwoMasses;
+
+            if (impact > 0.04) unlockAchievement('homeRun');
+            if (INFO) console.log('impact: ' + impact.toString());
+          }
+
           return mass;
         }
       }
