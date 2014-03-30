@@ -1374,7 +1374,7 @@ function Game() {
 
     var now = new Date().getTime();
     var recentAchievements = [];
-    var animationDuration = 5000;
+    var animationDuration = 7000;
 
     for (var slug in achievements) {
       var achievement = achievements[slug];
@@ -1388,11 +1388,29 @@ function Game() {
     }
 
     for (var i = 0; i < recentAchievements.length; i++) {
-      ctx.font = '15px monospace';
+      var recentAchievement = recentAchievements[i];
+      var progress = (now - recentAchievement.unlocked) / animationDuration;
+
+      var visibility = 1;
+      var buffer = 0.2;
+
+      var easing = 6;
+
+      if (progress < buffer) visibility = Math.pow(progress / buffer, 1/easing);
+      else if (progress > 1-buffer) visibility = Math.pow((1 - progress) / buffer, easing);
+
       ctx.textAlign = 'right';
       ctx.textBaseline = 'top';
-      ctx.fillStyle = rgbWithOpacity([0,0,0], 1);  // XXX this should probably fade out or something
-      ctx.fillText('Unlocked achievement: ' + recentAchievements[i].name, width - 7, 5 + 15 * i);
+      ctx.fillStyle = rgbWithOpacity([0,0,0], visibility);  // XXX this should probably fade out or something
+      ctx.font = '17px monospace';
+
+      var sink = -50 * (1 - visibility);  // how far off the top of the screen they should fall.
+      var notificationHeight = 60;
+      var baseNotificationHeight = 20 + notificationHeight * i;
+
+      ctx.fillText('Achievement Unlocked', width-25, visibility * baseNotificationHeight + sink);
+      ctx.font = '25px monospace';
+      ctx.fillText(recentAchievement.name, width-25, 19 + visibility * baseNotificationHeight + sink);
     }
   };
 
