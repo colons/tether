@@ -1033,7 +1033,7 @@ var achievements = {
   },
   homeRun: {
     name: 'Home Run',
-    description: 'Hit an enemy at speed'
+    description: 'Hit an enemy at speed' // XXX implement this
   }
 };
 
@@ -1042,7 +1042,6 @@ function unlockAchievement(slug) {
   if (!achievement.unlocked) {
     achievement.unlocked = new Date();
     document.cookie = slug + '=' + achievement.unlocked.getTime().toString() + '; max-age=' + (60*60*24*365).toString();
-    // XXX tell the player they're awesome
   }
 }
 
