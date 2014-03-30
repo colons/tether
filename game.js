@@ -21,6 +21,10 @@ function extend(base, sub) {
   });
 }
 
+function choice(array) {
+  return array[Math.floor(Math.random() * array.length)];
+}
+
 function somewhereInTheViewport() {
   return {
     x: Math.random() * width,
@@ -981,64 +985,44 @@ function aBunchOf(enemyType, count, interval) {
 }
 
 
-// Spawn a bunch of enemies in neat lines.
-function Rows() {
-  Wave.call(this);
-  this.spawns = [
-    {delay: 0, type: Idiot, pos: [1/5, 4/5], target: game.player, opts: {size: 2}},
-    {delay: 5, type: Idiot, pos: [1/5, 3/5], target: game.player, opts: {size: 2}},
-    {delay: 5, type: Idiot, pos: [1/5, 2/5], target: game.player, opts: {size: 2}},
-    {delay: 5, type: Idiot, pos: [1/5, 1/5], target: game.player, opts: {size: 2}},
+// Uncurated garbage for when the tutorials are over.
+function autoWave(difficulty) {
+  var enemyPool = [Drifter, Idiot, Twitchy];
+  var totalSpawns;
 
-    {delay: 50, type: Idiot, pos: [4/5, 1/5], target: game.tether, opts: {size: 0.5}},
-    {delay: 5,  type: Idiot, pos: [4/5, 2/5], target: game.tether, opts: {size: 0.5}},
-    {delay: 5,  type: Idiot, pos: [4/5, 3/5], target: game.tether, opts: {size: 0.5}},
-    {delay: 5,  type: Idiot, pos: [4/5, 4/5], target: game.tether, opts: {size: 0.5}},
-
-    {delay: 100, type: Twitchy, pos: [4/5, 4/5], target: game.tether},
-    {delay: 5,   type: Twitchy, pos: [3/5, 4/5], target: game.tether},
-    {delay: 5,   type: Twitchy, pos: [2/5, 4/5], target: game.tether},
-    {delay: 5,   type: Twitchy, pos: [1/5, 4/5], target: game.tether},
-
-    {delay: 50, type: Twitchy, pos: [1/5, 1/5], target: game.player},
-    {delay: 5,  type: Twitchy, pos: [2/5, 1/5], target: game.player},
-    {delay: 5,  type: Twitchy, pos: [3/5, 1/5], target: game.player},
-    {delay: 5,  type: Twitchy, pos: [4/5, 1/5], target: game.player}
-  ];
-}
-extend(Wave, Rows);
-
-
-/* THE FINAL WAVE; RANDOM SPAWNS FOREVER *
- *
- * must never set this.complete to true and doesn't use set patterns, so
- * overrides spawnEnemies */
-
-function EndlessRandomWave() {Wave.call(this);}
-extend(Wave, EndlessRandomWave);
-
-EndlessRandomWave.prototype.spawnEnemies = function() {
-  if (game.timeElapsed > this.startedAt + 100 && Math.random() < 0.02 * game.timeDelta) {
-    var target = this.randomTarget();
-
-    var enemyPool = [Idiot, Twitchy, Drifter];
-    var enemyType = enemyPool[Math.floor(Math.random() * enemyPool.length)];
-    var enemy = new enemyType({
-      target: target,
-      spawnAt: game.timeElapsed + this.spawnWarningDuration,
-      wave: this
-    });
-    enemy.teleportTo(enemy.randomSpawnPosition());
-    this.enemies.push(enemy);
+  if (difficulty % 2) {
+    // this is gonna be a wave of random enemy types
+    totalSpawns = 15;
+  } else {
+    // this is gonna be a wave of just one enemy
+    enemyPool = [enemyPool[difficulty/2 % enemyPool.length]];
+    totalSpawns = 10;
   }
-};
+
+  function AutoWave() {
+    Wave.call(this);
+    this.spawns = [];
+
+    for (var i = 0; i < totalSpawns; i++) {
+      this.spawns.push({
+        delay: Math.pow(Math.random(), 1/2) * 400/difficulty,
+        type: choice(enemyPool)
+      });
+    }
+  }
+
+  extend(Wave, AutoWave);
+  return AutoWave;
+}
 
 
 /* THE GAME */
 function Game() {
   var self = this;
 
-  self.reset = function() {
+  self.reset = function(waveIndex) {
+    canvas.classList.remove('hidecursor');
+
     self.background = new Background();
     self.ended = null;
     self.score = 0;
@@ -1050,22 +1034,18 @@ function Game() {
 
     self.started = false;
 
-    self.waveIndex = 0;
+    self.waveIndex = waveIndex || 0;
     self.waves = [
       tutorialFor(Drifter, 100, {size: 2}),
-      aBunchOf(Drifter, 5, 100),
+      aBunchOf(Drifter, 4, 100),
 
       tutorialFor(Idiot, 100, {size: 2}),
-      aBunchOf(Idiot, 5, 100),
+      aBunchOf(Idiot, 4, 100),
       aBunchOf(Idiot, 5, 30),
 
       tutorialFor(Twitchy, 100),
-      aBunchOf(Twitchy, 5, 50),
-      aBunchOf(Twitchy, 5, 20),
-
-      // Rows,
-
-      EndlessRandomWave
+      aBunchOf(Twitchy, 4, 50),
+      aBunchOf(Twitchy, 5, 20)
     ];
     self.wave = undefined;
 
@@ -1085,7 +1065,13 @@ function Game() {
   };
 
   self.pickNextWave = function() {
-    self.wave = new self.waves[self.waveIndex++]();
+    var waveType = self.waves[self.waveIndex++];
+
+    if (waveType === undefined) {
+      waveType = autoWave(self.waveIndex);
+    }
+
+    self.wave = new waveType();
   };
 
   self.incrementScore = function(incr) {
@@ -1365,7 +1351,7 @@ function Game() {
     self.speed = self.slowSpeed;
   };
 
-  self.reset();
+  self.reset(0);
 }
 
 /* FIRE */
@@ -1374,7 +1360,7 @@ game = new Game();
 
 function restartGameIfEnded(e) {
   if (game.ended) {
-    game.reset();
+    game.reset(0);
   }
 }
 
