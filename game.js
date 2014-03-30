@@ -540,7 +540,10 @@ Enemy.prototype.step = function() {
   Mass.prototype.step.call(this);
 };
 
-Enemy.prototype.die = function() {
+// If the player has died in the process of killing the enemy, they do not
+// deserve to be rewarded.
+Enemy.prototype.die = function(playerDeservesAchievement) {
+  if (playerDeservesAchievement) unlockAchievement('kill');
   this.explode();
   this.died = game.timeElapsed;
   game.incrementScore(1);
@@ -1022,25 +1025,24 @@ function autoWave(difficulty) {
 var achievements = {
   kill: {
     name: 'Kill',
-    description: 'Play a video game.'
+    description: 'Play a video game'
   },
   die: {
     name: 'Die',
-    description: 'Succumb to the inevitable.'
+    description: 'Succumb to the inevitable'
   },
   homeRun: {
     name: 'Home Run',
-    description: 'Hit an enemy with your escortee as hard as you can'
+    description: 'Hit an enemy at speed'
   }
 };
 
 function unlockAchievement(slug) {
   var achievement = achievements[slug];
-  if (achievement.unlocked) return false;
-  else {
+  if (!achievement.unlocked) {
     achievement.unlocked = new Date();
     document.cookie = slug + '=' + achievement.unlocked.getTime().toString() + '; max-age=' + (60*60*24*365).toString();
-    return true;
+    // XXX tell the player they're awesome
   }
 }
 
@@ -1057,6 +1059,22 @@ function syncAchievements(slug) {
       achievements[key].unlocked = new Date(parseInt(value, 10));
     }
   }
+}
+
+function getUnlockedAchievements(invert) {
+  var unlockedAchievements = [];
+  invert = invert || false;
+
+  for (var key in achievements) {
+    var achievement = achievements[key];
+    if (invert ^ (achievement.unlocked !== undefined)) unlockedAchievements.push(achievement);
+  }
+
+  return unlockedAchievements;
+}
+
+function getLockedAchievements() {
+  return getUnlockedAchievements(true);
 }
 
 
@@ -1199,7 +1217,7 @@ function Game() {
       var cableLines = linesFromPolygon(cableAreaCovered);
 
       if (pointInPolygon(enemy.position, cableAreaCovered)) {
-        enemy.die();
+        enemy.die(true);
         continue;
       }
 
@@ -1207,7 +1225,7 @@ function Game() {
         var intersection = getIntersection(journey, cableLines[ci]);
 
         if (intersection.onLine1 && intersection.onLine2) {
-          enemy.die();
+          enemy.die(true);
           break;
         }
       }
@@ -1263,7 +1281,7 @@ function Game() {
           // there was contact, so setPosition is the wrong thing to do.
           enemy.position = enemyPosition;
           mass.position = massPosition;
-          enemy.die();
+          enemy.die(false);
           return mass;
         }
       }
@@ -1278,6 +1296,7 @@ function Game() {
     if (deadMass) {
       deadMass.rgb = [200,20,20];
       deadMass.explode();
+      unlockAchievement('die');
       game.end();
     }
   };
@@ -1348,6 +1367,97 @@ function Game() {
     ctx.fillText({touch: 'tap', mouse: 'click'}[self.tether.lastInteraction] + ' to restart', width/2, height/2);
   };
 
+  self.drawAchievementNotifications = function() {
+    // We draw these in real time rather than in game time, so the timing is
+    // inconsistent with just about everything else. Here, we're using actual,
+    // real milliseconds.
+
+    var now = new Date().getTime();
+    var recentAchievements = [];
+    var animationDuration = 5000;
+
+    for (var slug in achievements) {
+      var achievement = achievements[slug];
+      if (achievement.unlocked === undefined) continue;
+
+      var unlocked = achievement.unlocked.getTime();
+
+      if (now > unlocked && now < (unlocked + animationDuration)) {
+        recentAchievements.push(achievement);
+      }
+    }
+
+    for (var i = 0; i < recentAchievements.length; i++) {
+      ctx.font = '15px monospace';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillStyle = rgbWithOpacity([0,0,0], 1);  // XXX this should probably fade out
+      ctx.fillText('Unlocked achievement: ' + recentAchievements[i].name, width - 5, height - 7 - 15 * i);
+    }
+  };
+
+  // Extremely stupid; only really for use in
+  // drawAchievementUI().
+  self.drawAchievements = function(achievementList, fromBottom, headingText) {
+    if (achievementList.length === 0) return fromBottom;
+    for (var i = 0; i < achievementList.length; i++) {
+      var achievement = achievementList[i];
+      ctx.font = '18px monospace';
+      ctx.fillText(achievement.name, width-10, height-fromBottom-16);
+
+      ctx.font = '15px monospace';
+      ctx.fillText(achievement.description, width-10, height-fromBottom);
+      fromBottom += 45;
+    }
+
+    ctx.font = 'bold 20px monospace';
+    ctx.fillText(headingText, width-10, height-fromBottom);
+    fromBottom += 55;
+
+    return fromBottom;
+  };
+
+  self.drawAchievementUI = function() {
+    var unlockedAchievements = getUnlockedAchievements();
+    if (unlockedAchievements.length > 0) {
+      ctx.font = '20px monospace';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'alphabetic';
+    
+      var indicatedPosition = {x: 0, y: 0};
+      if (isNaN(game.tether.lastMousePosition.x)) {
+        indicatedPosition = {x: 0, y: 0};
+      } else {
+        indicatedPosition = game.tether.lastMousePosition;
+      }
+      var distanceFromCorner = vectorMagnitude(lineDelta([indicatedPosition, {x: width, y: height}]));
+      var distanceRange = [100, 300];
+      var hintOpacity;
+
+      if (distanceFromCorner > distanceRange[1]) hintOpacity = 1;
+      else if (distanceFromCorner > distanceRange[0]) hintOpacity = (distanceFromCorner - distanceRange[0]) / (distanceRange[1] - distanceRange[0]);
+      else hintOpacity = 0;
+
+      var listingOpacity = 1 - hintOpacity;
+
+      // the hint that there is something in this corner
+      ctx.fillStyle = rgbWithOpacity([0,0,0], hintOpacity/2);
+      ctx.fillText('Achievements', width-5, height-7);
+
+      // the background that makes the listing readable
+      ctx.fillStyle = rgbWithOpacity([255, 255, 255], listingOpacity * 0.9);
+      ctx.beginPath();
+      ctx.fillRect(0, 0, width, height);
+
+      // the listing itself
+      var fromBottom = 11;
+      ctx.fillStyle = rgbWithOpacity([0,0,0], listingOpacity * 0.5);
+      fromBottom = this.drawAchievements(getLockedAchievements(), fromBottom, 'Locked');
+      ctx.fillStyle = rgbWithOpacity([0,0,0], listingOpacity);
+      this.drawAchievements(unlockedAchievements, fromBottom, 'Unlocked');
+    }
+  };
+
   self.drawInfo = function() {
     var fromBottom = 7;
     var info = {
@@ -1359,15 +1469,16 @@ function Game() {
       info.wave = this.waveIndex.toString() + ' - ' + this.wave.constructor.name;
       info.colchecks = self.collisionChecks.toFixed();
     }
-  
+
     for (var key in info) {
-      ctx.font = '15px monospace';
+      ctx.font = '12px monospace';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'alphabetic';
       ctx.fillStyle = rgbWithOpacity([0,0,0], 1);
       ctx.fillText(key + ': ' + info[key], 5, height-fromBottom);
-      fromBottom += 18;
+      fromBottom += 15;
     }
+
   };
 
   self.draw = function() {
@@ -1384,6 +1495,9 @@ function Game() {
 
     self.drawLogo();
     self.drawRestartTutorial();
+
+    self.drawAchievementNotifications();
+    if (!self.started || self.ended) self.drawAchievementUI();
 
     if (INFO) self.drawInfo();
   };
