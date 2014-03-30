@@ -237,11 +237,15 @@ Mass.prototype = {
     if (distanceFromNearEdge < 0) {
       this.velocity[d] *= -this.bounciness;
       this.position[d] = (distanceFromNearEdge * this.bounciness) + this.radius;
+      this.bounceCallback();
     } else if (distanceFromFarEdge < 0) {
       this.velocity[d] *= -this.bounciness;
       this.position[d] = max - (distanceFromFarEdge * this.bounciness) - this.radius;
+      this.bounceCallback();
     }
   },
+
+  bounceCallback: function() {},
 
   collideWithWalls: function () {
     if (!this.walls) return;
@@ -513,6 +517,10 @@ function Enemy(opts) {
 }
 extend(Mass, Enemy);
 
+Enemy.prototype.randomSpawnPosition = function() {
+  return somewhereInTheViewport(this.radius);
+};
+
 Enemy.prototype.getTargetVector = function() {
   return forXAndY([this.target.position, this.position], forXAndY.subtract);
 };
@@ -556,8 +564,57 @@ Enemy.prototype.drawWarning = function() {
   ctx.stroke();
 };
 
+// Basically the diamond from Geometry Wars.
+function Drifter(opts) {
+  Enemy.call(this, opts);
+  this.radius = 10;
+  this.rgb = [30,150,150];
+  this.thrustAngle = undefined;  // we can't get a good targetVector until we've spawned.
+  this.walls = true;
+  this.bounciness = 1;
+  this.power = 0.3;
+  this.lubricant = 0.8;
+  this.curvature = Math.max(width, height);
+}
+extend(Enemy, Drifter);
+
+Drifter.prototype.randomSpawnPosition = function() {
+  // If a Drifter spawns close to the edge, it's actually *really difficult* to
+  // kill, so we limit outselves to the centre half of the viewport.
+  var somewhere = somewhereInTheViewport();
+  somewhere.x = (somewhere.x * 2/3) + width/6;
+  somewhere.y = (somewhere.y * 2/3) + height/6;
+  return somewhere;
+};
+
+Drifter.prototype.step = function() {
+  if (this.thrustAngle === undefined) {
+    // It's easier to hit a drifter who's heading for you, but at the same time
+    // we don't want them to be more threatening than necessary, so we'll point
+    // in *just* the wrong direction.
+
+    this.thrustAngle = vectorAngle(this.getTargetVector());
+
+    var error = Math.random() + 1;
+    if (Math.random() > 0.5) error *= -1;
+    this.thrustAngle += error/3;
+  }
+
+  if (!this.died) {
+    this.force = vectorAt(this.thrustAngle, this.power);
+  } else this.force = {x: 0, y: 0};
+
+  Enemy.prototype.step.call(this);
+};
+
+Drifter.prototype.bounceCallback = function() {
+  this.thrustAngle = vectorAngle(this.velocity);  // just reinforce the bounce
+};
+
+
+// An enemy that gravitates towards its target. Takes a size argument that
+// detemines radius and general speediness.
 function Idiot(opts) {
-  // A very stupid enemy. Basically the diamond from Geometry Wars.
   Enemy.call(this, opts);
 
   var size = opts.size || 0.5 + Math.random();
@@ -565,7 +622,6 @@ function Idiot(opts) {
   this.mass = size;
   this.lubricant = 0.9;
   this.radius = size * 10;
-  this.deathDuration = 50;
   this.rgb = [60,100,60];
 }
 extend(Enemy, Idiot);
@@ -812,7 +868,7 @@ Wave.prototype.spawnEnemies = function() {
           x: spawn.pos[0] * width,
           y: spawn.pos[1] * height
         });
-      } else enemy.teleportTo(somewhereInTheViewport());
+      } else enemy.teleportTo(enemy.randomSpawnPosition());
 
       this.enemies.push(enemy);
 
@@ -900,14 +956,14 @@ EndlessRandomWave.prototype.spawnEnemies = function() {
   if (Math.random() < 0.02 * game.timeDelta) {
     var target = this.randomTarget();
 
-    var enemyPool = [Idiot, Twitchy];
+    var enemyPool = [Idiot, Twitchy, Drifter];
     var enemyType = enemyPool[Math.floor(Math.random() * enemyPool.length)];
     var enemy = new enemyType({
       target: target,
       spawnAt: game.timeElapsed + this.spawnWarningDuration,
       wave: this
     });
-    enemy.teleportTo(somewhereInTheViewport(enemy.radius));
+    enemy.teleportTo(enemy.randomSpawnPosition());
     this.enemies.push(enemy);
   }
 };
@@ -931,13 +987,19 @@ function Game() {
 
     self.waveIndex = 0;
     self.waves = [
+      tutorialFor(Drifter, 100, {size: 2}),
+      aBunchOf(Drifter, 5, 100),
+
       tutorialFor(Idiot, 100, {size: 2}),
       aBunchOf(Idiot, 5, 100),
       aBunchOf(Idiot, 5, 30),
+
       tutorialFor(Twitchy, 100),
       aBunchOf(Twitchy, 5, 50),
       aBunchOf(Twitchy, 5, 20),
+
       // Rows,
+
       EndlessRandomWave
     ];
     self.wave = undefined;
