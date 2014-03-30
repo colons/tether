@@ -1043,6 +1043,10 @@ var achievements = {
     name: 'Noisy',
     description: 'Be alive while fifteen enemies are on screen'
   },
+  lowRes: {
+    name: 'Cramped',  // XXX implement this
+    description: 'Score ten points with at 500x500px or less'
+  },
   handsFree: {
     name: 'Hands-free',  // XXX implement this
     description: 'Kill five enemies without moving the tether'
