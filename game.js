@@ -556,7 +556,19 @@ Enemy.prototype.step = function() {
 // If the player has died in the process of killing the enemy, they do not
 // deserve to be rewarded.
 Enemy.prototype.die = function(playerDeservesAchievement) {
-  if (playerDeservesAchievement) unlockAchievement('kill');
+  if (playerDeservesAchievement) {
+    unlockAchievement('kill');
+
+    var name = this.constructor.name;
+
+    if (game.enemyTypesKilled.indexOf(name) === -1) {
+      game.enemyTypesKilled.push(name);
+      if (INFO) console.log(game.enemyTypesKilled);
+      if (game.enemyTypesKilled.length === enemyPool.length) {
+        unlockAchievement('omnicide');
+      }
+    }
+  }
   this.explode();
   this.died = game.timeElapsed;
   game.incrementScore(1);
@@ -1005,15 +1017,16 @@ function aBunchOf(enemyType, count, interval) {
 
 // Uncurated garbage for when the tutorials are over.
 function autoWave(difficulty) {
-  var enemyPool = [Drifter, Idiot, Twitchy];
   var totalSpawns;
+  var localEnemyPool;
 
   if (difficulty % 2) {
     // this is gonna be a wave of random enemy types
     totalSpawns = 15;
+    localEnemyPool = enemyPool;
   } else {
     // this is gonna be a wave of just one enemy
-    enemyPool = [enemyPool[difficulty/2 % enemyPool.length]];
+    localEnemyPool = [enemyPool[difficulty/2 % enemyPool.length]];
     totalSpawns = 10;
   }
 
@@ -1024,7 +1037,7 @@ function autoWave(difficulty) {
     for (var i = 0; i < totalSpawns; i++) {
       this.spawns.push({
         delay: Math.pow(Math.random(), 1/2) * 400/(difficulty + 7),
-        type: choice(enemyPool)
+        type: choice(localEnemyPool)
       });
     }
   }
@@ -1048,6 +1061,10 @@ var achievements = {
   impact: {
     name: 'Concussion',
     description: 'Feel the impact'
+  },
+  omnicide: {
+    name: 'Omnicide',
+    description: 'Kill every type of enemy without dying'
   },
   noisy: {
     name: 'Noisy',
@@ -1113,6 +1130,7 @@ function Game() {
     self.background = new Background();
     self.ended = null;
     self.score = 0;
+    self.enemyTypesKilled = [];
     self.lastPointScored = 0;
     self.timeElapsed = 0;
     self.normalSpeed = 0.04;
@@ -1565,6 +1583,7 @@ function Game() {
   self.reset(0);
 }
 
+var enemyPool = [Drifter, Idiot, Twitchy];
 /* FIRE */
 syncAchievements();
 game = new Game();
