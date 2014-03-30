@@ -509,6 +509,7 @@ function Enemy(opts) {
 
   this.target = opts.target;
   this.spawnAt = opts.spawnAt;
+  this.wave = opts.wave;
 }
 extend(Mass, Enemy);
 
@@ -545,7 +546,7 @@ Enemy.prototype.drawTargetVector = function() {
 
 Enemy.prototype.drawWarning = function() {
   // as a number between 0 and 1
-  var timeUntilSpawn = (this.spawnAt - game.timeElapsed) / game.spawnWarningDuration;
+  var timeUntilSpawn = (this.spawnAt - game.timeElapsed) / this.wave.spawnWarningDuration;
 
   var radius = timeUntilSpawn * 700;
 
@@ -559,7 +560,7 @@ function Idiot(opts) {
   // A very stupid enemy. Basically the diamond from Geometry Wars.
   Enemy.call(this, opts);
 
-  var size = 0.5 + Math.random();
+  var size = opts.size || 0.5 + Math.random();
 
   this.mass = size;
   this.lubricant = 0.9;
@@ -728,6 +729,140 @@ Exhaust.prototype.rgbForIntensity = function(intensity) {
 };
 
 
+/* WAVES */
+function Wave() {
+  this.enemies = [];
+  this.complete = false;
+  this.doneSpawningEnemies = false;
+  this.spawnWarningDuration = 50;
+  this.startedAt = game.timeElapsed;
+}
+
+Wave.prototype.step = function() {
+  this.spawnEnemies();
+
+  var remainingLivingEnemies = 0;
+
+  for (var i = 0; i < this.enemies.length; i++) {
+    var enemy = this.enemies[i];
+    if (enemy.spawned) enemy.step();
+    else if (enemy.spawnAt <= game.timeElapsed) enemy.spawned = true;
+
+    if (!enemy.died) remainingLivingEnemies++;
+  }
+
+  if (this.doneSpawningEnemies && remainingLivingEnemies === 0) this.complete = true;
+};
+
+Wave.prototype.randomTarget = function() {
+  if (Math.random() > 0.5) return game.player;
+  else return game.tether;
+};
+
+Wave.prototype.draw = function() {
+  for (var i = 0; i < this.enemies.length; i++) {
+    var enemy = this.enemies[i];
+    if (enemy.spawned) enemy.draw();
+    else enemy.drawWarning();
+  }
+};
+
+Wave.prototype.spawnEnemies = function() {
+  if (this.doneSpawningEnemies) return;
+
+  var remaininUnspawnedEnemies = 0;
+
+  var totalDelay = 0;
+
+  for (var i = 0; i < this.spawns.length; i++) {
+    var spawn = this.spawns[i];
+
+    totalDelay += spawn.delay;
+
+    if (spawn.spawned) continue;
+
+    if (totalDelay <= (game.timeElapsed - this.startedAt)) {
+      var opts = spawn.opts || {};
+
+      opts.target = spawn.target || this.randomTarget();
+      opts.spawnAt = game.timeElapsed + this.spawnWarningDuration;
+      opts.wave = this;
+
+      var enemy = new spawn.type(opts);
+
+      enemy.teleportTo({
+        x: spawn.pos[0] * width,
+        y: spawn.pos[1] * height
+      });
+
+      this.enemies.push(enemy);
+
+      spawn.spawned = true;
+    } else {
+      remaininUnspawnedEnemies++;
+    }
+  }
+
+  if (remaininUnspawnedEnemies === 0) this.doneSpawningEnemies = true;
+};
+
+
+
+function Rows() {
+  Wave.call(this);
+  this.spawns = [
+    {delay: 5, type:Twitchy, pos: [1/5, 1/5], target: game.player},
+    {delay: 5, type:Twitchy, pos: [2/5, 1/5], target: game.player},
+    {delay: 5, type:Twitchy, pos: [3/5, 1/5], target: game.player},
+    {delay: 5, type:Twitchy, pos: [4/5, 1/5], target: game.player},
+
+    {delay: 50, type:Twitchy, pos: [4/5, 4/5], target: game.tether},
+    {delay: 5,  type:Twitchy, pos: [3/5, 4/5], target: game.tether},
+    {delay: 5,  type:Twitchy, pos: [2/5, 4/5], target: game.tether},
+    {delay: 5,  type:Twitchy, pos: [1/5, 4/5], target: game.tether},
+
+    {delay: 50, type:Idiot, pos: [1/5, 4/5], target: game.tether, opts: {size: 2}},
+    {delay: 5,  type:Idiot, pos: [1/5, 3/5], target: game.tether, opts: {size: 2}},
+    {delay: 5,  type:Idiot, pos: [1/5, 2/5], target: game.tether, opts: {size: 2}},
+    {delay: 5,  type:Idiot, pos: [1/5, 1/5], target: game.tether, opts: {size: 2}},
+
+    {delay: 50, type:Idiot, pos: [4/5, 1/5], target: game.tether, opts: {size: 0.5}},
+    {delay: 5,  type:Idiot, pos: [4/5, 2/5], target: game.tether, opts: {size: 0.5}},
+    {delay: 5,  type:Idiot, pos: [4/5, 3/5], target: game.tether, opts: {size: 0.5}},
+    {delay: 5,  type:Idiot, pos: [4/5, 4/5], target: game.tether, opts: {size: 0.5}}
+
+  ];
+}
+extend(Wave, Rows);
+
+
+/* THE FINAL WAVE; RANDOM SPAWNS FOREVER *
+ *
+ * must never set this.complete to true and doesn't use set patterns, so
+ * overrides spawnEnemies */
+
+function EndlessRandomWave() {Wave.call(this);}
+extend(Wave, EndlessRandomWave);
+
+EndlessRandomWave.prototype.spawnEnemies = function() {
+  if (Math.random() < 0.02 * game.timeDelta) {
+    var target;
+    if (Math.random() > 0.5) target = game.player;
+    else target = game.tether;
+
+    var enemyPool = [Idiot, Twitchy];
+    var enemyType = enemyPool[Math.floor(Math.random() * enemyPool.length)];
+    var enemy = new enemyType({
+      target: target,
+      spawnAt: game.timeElapsed + this.spawnWarningDuration,
+      wave: this
+    });
+    enemy.teleportTo(somewhereInTheViewport(enemy.radius));
+    this.enemies.push(enemy);
+  }
+};
+
+
 /* THE GAME */
 function Game() {
   var self = this;
@@ -742,10 +877,12 @@ function Game() {
     self.slowSpeed = self.normalSpeed / 100;
     self.speed = self.normalSpeed;
 
-    self.spawnWarningDuration = 50;
     self.started = false;
 
-    self.enemies = [];
+    self.waveIndex = 0;
+    self.waves = [Rows, EndlessRandomWave];
+    self.wave = undefined;
+
     self.particles = [];
 
     self.tether = new Tether();
@@ -759,6 +896,10 @@ function Game() {
     self.player.lubricant = self.player.onceGameHasStartedLubricant;
     self.started = true;
     self.timeElapsed = 0;
+  };
+
+  self.pickNextWave = function() {
+    self.wave = new self.waves[self.waveIndex++]();
   };
 
   self.incrementScore = function(incr) {
@@ -787,6 +928,8 @@ function Game() {
   };
 
   self.step = function() {
+    // When DEBUG is on, we sometimes draw stuff outside of draw();
+    // so we have to clear earlier than we normally would.
     if (DEBUG) ctx.clearRect(0, 0, width, height);
 
     var now = new Date().getTime();
@@ -812,49 +955,27 @@ function Game() {
 
     self.background.step();
 
-    if (self.started) {
-      self.spawnEnemies();
-    }
-
     self.tether.step();
     self.player.step();
 
+    if (self.started) {
+      if (self.wave === undefined || self.wave.complete) self.pickNextWave();
+      self.wave.step();
+
+      if (!self.ended) self.checkForEnemyContact();
+      self.checkForCableContact();
+    }
+
     self.stepParticles();
 
-    for (var i = 0; i < self.enemies.length; i++) {
-      var enemy = self.enemies[i];
-      if (enemy.spawned) enemy.step();
-      else if (enemy.spawnAt <= self.timeElapsed) enemy.spawned = true;
-    }
-
-    if (!self.ended) self.checkForEnemyContact();
-    self.checkForCableContact();
-
     self.draw();
-  };
-
-  self.spawnEnemies = function() {
-    if (Math.random() < 0.02 * game.timeDelta) {
-      var target;
-      if (Math.random() > 0.5) target = self.player;
-      else target = self.tether;
-
-      var enemyPool = [Idiot, Twitchy];
-      var enemyType = enemyPool[Math.floor(Math.random() * enemyPool.length)];
-      var enemy = new enemyType({
-        target: target,
-        spawnAt: self.timeElapsed + self.spawnWarningDuration
-      });
-      enemy.teleportTo(somewhereJustOutsideTheViewport(enemy.radius));
-      self.enemies.push(enemy);
-    }
   };
 
   self.checkForCableContact = function() {
     var cableAreaCovered = self.cable.areaCoveredThisStep();
 
-    for (var i = 0; i < self.enemies.length; i++) {
-      var enemy = self.enemies[i];
+    for (var i = 0; i < self.wave.enemies.length; i++) {
+      var enemy = self.wave.enemies[i];
       if (enemy.died || !enemy.spawned) {
         continue;
       }
@@ -880,8 +1001,8 @@ function Game() {
   self.checkForEnemyContactWith = function(mass) {
     var massPositionDelta = lineDelta([mass.positionOnPreviousFrame, mass.position]);
 
-    for (var i = 0; i < self.enemies.length; i++) {
-      var enemy = self.enemies[i];
+    for (var i = 0; i < self.wave.enemies.length; i++) {
+      var enemy = self.wave.enemies[i];
       if (enemy.died || !enemy.spawned) {
         continue;
       }
@@ -963,14 +1084,6 @@ function Game() {
     }
   };
 
-  self.drawEnemies = function() {
-    for (var i = 0; i < self.enemies.length; i++) {
-      var enemy = self.enemies[i];
-      if (enemy.spawned) enemy.draw();
-      else enemy.drawWarning();
-    }
-  };
-
   self.drawLogo = function() {
     var opacity;
     if (!game.started) opacity = 1;
@@ -1020,10 +1133,14 @@ function Game() {
   self.drawInfo = function() {
     var fromBottom = 7;
     var info = {
-      colchecks: self.collisionChecks.toFixed(),
       time: self.timeElapsed.toFixed(2),
       fps: (1000/self.realTimeDelta).toFixed()
     };
+
+    if (self.started) {
+      info.wave = this.waveIndex.toString() + ' - ' + this.wave.constructor.name;
+      info.colchecks = self.collisionChecks.toFixed();
+    }
   
     for (var key in info) {
       ctx.font = '15px monospace';
@@ -1041,8 +1158,8 @@ function Game() {
     self.background.draw();
     self.drawScore();
     self.drawParticles();
-    self.drawEnemies();
 
+    if (self.started) self.wave.draw();
     self.cable.draw();
     self.tether.draw();
     self.player.draw();
