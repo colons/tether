@@ -1006,7 +1006,7 @@ function autoWave(difficulty) {
 
     for (var i = 0; i < totalSpawns; i++) {
       this.spawns.push({
-        delay: Math.pow(Math.random(), 1/2) * 400/difficulty,
+        delay: Math.pow(Math.random(), 1/2) * 400/(difficulty + 7),
         type: choice(enemyPool)
       });
     }
@@ -1043,11 +1043,11 @@ function Game() {
 
       tutorialFor(Idiot, {size: 2}),
       aBunchOf(Idiot, 4, 100),
-      aBunchOf(Idiot, 5, 30),
+      aBunchOf(Idiot, 5, 10),
 
       tutorialFor(Twitchy),
       aBunchOf(Twitchy, 4, 50),
-      aBunchOf(Twitchy, 5, 20)
+      aBunchOf(Twitchy, 5, 10)
     ];
     self.wave = undefined;
 
@@ -1070,7 +1070,7 @@ function Game() {
     var waveType = self.waves[self.waveIndex++];
 
     if (waveType === undefined) {
-      waveType = autoWave(self.waveIndex);
+      waveType = autoWave(self.waveIndex - self.waves.length);
     }
 
     self.wave = new waveType();
