@@ -1017,6 +1017,49 @@ function autoWave(difficulty) {
 }
 
 
+/* ACHIEVEMENTS *
+ * because it wouldn't be worth playing more than twice without 'em */
+var achievements = {
+  kill: {
+    name: 'Kill',
+    description: 'Play a video game.'
+  },
+  die: {
+    name: 'Die',
+    description: 'Succumb to the inevitable.'
+  },
+  homeRun: {
+    name: 'Home Run',
+    description: 'Hit an enemy with your escortee as hard as you can'
+  }
+};
+
+function unlockAchievement(slug) {
+  var achievement = achievements[slug];
+  if (achievement.unlocked) return false;
+  else {
+    achievement.unlocked = new Date();
+    document.cookie = slug + '=' + achievement.unlocked.getTime().toString() + '; max-age=' + (60*60*24*365).toString();
+    return true;
+  }
+}
+
+// Load unlocked achievements from the cookie.
+function syncAchievements(slug) {
+  var cookieStrings = document.cookie.split(';');
+  for (var i = 0; i < cookieStrings.length; i++) {
+    var cs = cookieStrings[i];
+    var split = cs.replace(/ /, '').split('=');
+    var key = split[0];
+
+    if (key in achievements) {
+      var value = split[1];
+      achievements[key].unlocked = new Date(parseInt(value, 10));
+    }
+  }
+}
+
+
 /* THE GAME */
 function Game() {
   var self = this;
@@ -1357,6 +1400,7 @@ function Game() {
 }
 
 /* FIRE */
+syncAchievements();
 initCanvas();
 game = new Game();
 
