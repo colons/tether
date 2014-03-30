@@ -1080,8 +1080,6 @@ function Game() {
     if (self.ended) return;
     self.lastPointScored = self.timeElapsed;
     self.score += incr;
-    self.player.radius += incr/2;
-    self.tether.radius += incr/4;
   };
 
   self.getIntensity = function() {
