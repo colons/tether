@@ -891,11 +891,13 @@ function Game() {
       // Iterate through a bunch of places our objects should have been in the
       // last frame and see if any of them collide.
       if (DEBUG) {
-        ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+        ctx.strokeStyle = 'rgba(0,0,0,0.2)';
         ctx.beginPath();
       }
 
-      for (var progress = 0; progress < 1; progress += 1/40) {
+      for (var progress = 0; progress < 1; progress += (Math.min(enemy.radius, mass.radius))/Math.max(
+        enemyPositionDelta.x, enemyPositionDelta.y, massPositionDelta.x, massPositionDelta.y, 1
+      )) {
         enemyPosition = {
           x: enemy.positionOnPreviousFrame.x + enemyPositionDelta.x * progress,
           y: enemy.positionOnPreviousFrame.y + enemyPositionDelta.y * progress
@@ -906,6 +908,7 @@ function Game() {
           y: mass.positionOnPreviousFrame.y + massPositionDelta.y * progress
         };
 
+        if (INFO) this.collisionChecks += 1;
         if (DEBUG) {
           ctx.moveTo(enemyPosition.x, enemyPosition.y);
           ctx.lineTo(massPosition.x, massPosition.y);
@@ -931,6 +934,7 @@ function Game() {
   };
 
   self.checkForEnemyContact = function() {
+    if (INFO) this.collisionChecks = 0;
     var deadMass = self.checkForEnemyContactWith(self.tether) || self.checkForEnemyContactWith(self.player);
     if (deadMass) {
       deadMass.rgb = [200,20,20];
@@ -1016,6 +1020,7 @@ function Game() {
   self.drawInfo = function() {
     var fromBottom = 7;
     var info = {
+      colchecks: self.collisionChecks.toFixed(),
       time: self.timeElapsed.toFixed(2),
       fps: (1000/self.realTimeDelta).toFixed()
     };
