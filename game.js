@@ -664,13 +664,19 @@ Twitchy.prototype.step = function() {
     this.force = {x: 0, y: 0};
     if (this.charging) {
       this.fuel += (game.timeDelta * this.chargeRate);
-      if (this.fuel >= 1) this.charging = false;
+      if (this.fuel >= 1) {
+        this.fuel = 1;
+        this.charging = false;
+      }
     }
   } else {
     this.force = this.getTargetVector();
     this.fuel -= (game.timeDelta * this.dischargeRate);
 
-    if (this.fuel <= 0) this.charging = true;
+    if (this.fuel <= 0) {
+      this.fuel = 0;
+      this.charging = true;
+    }
   }
 
   Enemy.prototype.step.call(this);
@@ -678,25 +684,31 @@ Twitchy.prototype.step = function() {
 
 Twitchy.prototype.getCurrentColor = function() {
   if (this.charging) {
-    this.rgb = [30,30,200];
-  }
-  else this.rgb = [200,30,30];
+    var brightness = 255;
+    var whiteness = Math.pow(this.fuel, 1/40);
+
+    if ((0.98 < this.fuel) || (0.94 < this.fuel && this.fuel < 0.96)) {
+      // blinking to warn of imminent blast
+      brightness = 0;
+    }
+
+    this.rgb = [brightness, brightness * whiteness, brightness * whiteness];
+  } else this.rgb = [200,30,30];
 
   return Enemy.prototype.getCurrentColor.call(this);
 };
 
 Twitchy.prototype.draw = function() {
-  Enemy.prototype.draw.call(this);
-
-  if ((!this.charging) || this.fuel <= 0) return;
-  else {
+  if (this.charging && this.fuel >= 0) {
     // represent how much fuel we have
     ctx.fillStyle = rgbWithOpacity([30,30,30], this.getOpacity() * this.fuel);
     ctx.beginPath();
-    var radius = this.radius * 1/this.fuel;
+    var radius = this.radius * 1.2/this.fuel;
     ctx.arc(this.position.x, this.position.y, radius, 0, Math.PI*2);
     ctx.fill();
   }
+
+  Enemy.prototype.draw.call(this);
 };
 
 
@@ -988,7 +1000,6 @@ function Game() {
     self.waveIndex = 0;
     self.waves = [
       tutorialFor(Drifter, 100, {size: 2}),
-
       aBunchOf(Drifter, 5, 100),
 
       tutorialFor(Idiot, 100, {size: 2}),
