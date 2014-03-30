@@ -298,7 +298,7 @@ Mass.prototype = {
 
   getOpacity: function() {
     if (!this.died) return 1;
-    else return 0;
+    else return 1 / (game.timeElapsed - this.died);
   },
 
   getCurrentColor: function() {
@@ -668,7 +668,8 @@ Idiot.prototype.draw = function() {
   ctx.fill();
 
   Enemy.prototype.draw.call(this);
-  if (this.died) return;
+
+  if (this.died) return;  // dead idiots should not have pupils
 
   var targetVector = this.getTargetVector();
   var relativeDistance = this.getRelativeDistance();
@@ -870,7 +871,7 @@ Wave.prototype.step = function() {
     if (!enemy.died) this.remainingLivingEnemies++;
   }
 
-  if (this.doneSpawningEnemies && this.remainingLivingEnemies === 0) this.complete = true;
+  if (this.doneSpawningEnemies && this.remainingLivingEnemies === 0 && !this.hasEnemiesWorthDrawing) this.complete = true;
 };
 
 Wave.prototype.randomTarget = function() {
@@ -879,10 +880,17 @@ Wave.prototype.randomTarget = function() {
 };
 
 Wave.prototype.draw = function() {
+  this.hasEnemiesWorthDrawing = false;
+
   for (var i = 0; i < this.enemies.length; i++) {
     var enemy = this.enemies[i];
-    if (enemy.spawned) enemy.draw();
-    else enemy.drawWarning();
+    var opacity = enemy.getOpacity();
+    if (opacity > 0.01) {
+      if (enemy.spawned) enemy.draw();
+      else enemy.drawWarning();
+
+      this.hasEnemiesWorthDrawing = true;
+    }
   }
 };
 
@@ -907,13 +915,8 @@ Wave.prototype.spawnEnemies = function() {
       // does not get bored.
 
       compensatedForBoredom = true;
-
-      // Do not actually follow through on this if i === 0 because we don't
-      // ever want to skip a wave's initial delay.
-      if (i !== 0) {
-        this.boredomCompensation += timeUntilSpawn;
-        timeUntilSpawn -= this.boredomCompensation;
-      }
+      this.boredomCompensation += timeUntilSpawn;
+      timeUntilSpawn -= this.boredomCompensation;
     }
 
     if (timeUntilSpawn <= 0) {
