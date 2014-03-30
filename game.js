@@ -720,7 +720,7 @@ Idiot.prototype.getIrisColor = function() {
 
 Idiot.prototype.awakeness = function() {
   var timeAlive = game.timeElapsed - this.spawnAt;
-  var awakeness = (1 - (1/(timeAlive/3 + 1)));
+  return (1 - (1/(timeAlive/3 + 1)));
 };
 
 Idiot.prototype.drawIris = function() {
