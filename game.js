@@ -952,11 +952,11 @@ Wave.prototype.spawnEnemies = function() {
 
 
 // One instance of enemyType in a consistent position.
-function tutorialFor(enemyType, delay, enemyOpts) {
+function tutorialFor(enemyType, enemyOpts) {
   function Tutorial() {
     Wave.call(this);
     this.spawns = [{
-        delay: delay,
+        delay: 0,
         type:enemyType,
         pos: [1/2, 1/5],
         opts: enemyOpts || {}
@@ -1036,14 +1036,14 @@ function Game() {
 
     self.waveIndex = waveIndex || 0;
     self.waves = [
-      tutorialFor(Drifter, 100, {size: 2}),
+      tutorialFor(Drifter, {size: 2}),
       aBunchOf(Drifter, 4, 100),
 
-      tutorialFor(Idiot, 100, {size: 2}),
+      tutorialFor(Idiot, {size: 2}),
       aBunchOf(Idiot, 4, 100),
       aBunchOf(Idiot, 5, 30),
 
-      tutorialFor(Twitchy, 100),
+      tutorialFor(Twitchy),
       aBunchOf(Twitchy, 4, 50),
       aBunchOf(Twitchy, 5, 20)
     ];
