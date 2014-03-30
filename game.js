@@ -1454,14 +1454,14 @@ function Game() {
       ctx.textAlign = 'right';
       ctx.textBaseline = 'top';
       ctx.fillStyle = rgbWithOpacity([0,0,0], visibility);
-      ctx.font = '17px sans-serif';
+      ctx.font = '17px "Quantico", sans-serif';
 
       var sink = -50 * (1 - visibility);  // how far off the top of the screen they should fall.
       var notificationHeight = 60;
       var baseNotificationHeight = 20 + notificationHeight * i;
 
       ctx.fillText('Achievement Unlocked', width-25, visibility * baseNotificationHeight + sink);
-      ctx.font = '25px sans-serif';
+      ctx.font = 'bold 25px "Quantico", sans-serif';
       ctx.fillText(recentAchievement.name, width-25, 19 + visibility * baseNotificationHeight + sink);
     }
   };
@@ -1472,15 +1472,15 @@ function Game() {
     if (achievementList.length === 0) return fromBottom;
     for (var i = 0; i < achievementList.length; i++) {
       var achievement = achievementList[i];
-      ctx.font = '18px sans-serif';
+      ctx.font = '18px "Quantico", sans-serif';
       ctx.fillText(achievement.name, width-10, height-fromBottom-16);
 
-      ctx.font = '15px sans-serif';
+      ctx.font = '13px "Quantico", sans-serif';
       ctx.fillText(achievement.description, width-10, height-fromBottom);
       fromBottom += 45;
     }
 
-    ctx.font = 'bold 20px sans-serif';
+    ctx.font = 'bold 20px "Quantico", sans-serif';
     ctx.fillText(headingText, width-10, height-fromBottom);
     fromBottom += 55;
 
@@ -1490,7 +1490,7 @@ function Game() {
   self.drawAchievementUI = function() {
     var unlockedAchievements = getUnlockedAchievements();
     if (unlockedAchievements.length > 0) {
-      ctx.font = '20px sans-serif';
+      ctx.font = '20px "Quantico", sans-serif';
       ctx.textAlign = 'right';
       ctx.textBaseline = 'alphabetic';
     
