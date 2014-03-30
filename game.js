@@ -940,7 +940,7 @@ Wave.prototype.step = function() {
     if (!enemy.died) this.remainingLivingEnemies++;
   }
 
-  if (this.remainingLivingEnemies >= 15) unlockAchievement('noisy');
+  if (this.remainingLivingEnemies >= 15) unlockAchievement('panic');
   if (this.doneSpawningEnemies && this.remainingLivingEnemies === 0 && !this.hasEnemiesWorthDrawing) this.complete = true;
 };
 
@@ -1106,8 +1106,8 @@ var achievements = {
     name: 'Omnicide',
     description: 'Kill every type of enemy without dying'
   },
-  noisy: {
-    name: 'Noisy',
+  panic: {
+    name: 'Panic',
     description: 'Be alive while fifteen enemies are on screen'
   },
   lowRes: {
