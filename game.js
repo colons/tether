@@ -7,6 +7,7 @@ var ctx;
 var devicePixelRatio = window.devicePixelRatio || 1;
 var width;
 var height;
+var maximumPossibleDistanceBetweenTwoMasses;
 
 
 /* UTILITIES */
@@ -189,6 +190,8 @@ function scaleCanvas(ratio) {
 function initCanvas() {
   width = window.innerWidth;
   height = window.innerHeight;
+
+  maximumPossibleDistanceBetweenTwoMasses = vectorMagnitude({x: width, y: height});
 
   canvas = document.getElementById('game');
   ctx = canvas.getContext('2d');
@@ -558,7 +561,7 @@ Enemy.prototype.drawWarning = function() {
 
   var radius = timeUntilSpawn * 700;
 
-  ctx.strokeStyle = rgbWithOpacity(this.rgb, 1 - timeUntilSpawn);
+  ctx.strokeStyle = rgbWithOpacity(this.rgbWarning || this.rgb, 1 - timeUntilSpawn);
   ctx.beginPath();
   ctx.arc(this.position.x, this.position.y, radius, 0, Math.PI*2);
   ctx.stroke();
@@ -622,7 +625,8 @@ function Idiot(opts) {
   this.mass = size;
   this.lubricant = 0.9;
   this.radius = size * 10;
-  this.rgb = [60,100,60];
+  this.rgb = [255,255,255];
+  this.rgbWarning = [50,50,50];
 }
 extend(Enemy, Idiot);
 
@@ -636,6 +640,52 @@ Idiot.prototype.step = function() {
   } else this.force = {x: 0, y: 0};
 
   Enemy.prototype.step.call(this);
+};
+
+// Returns how far the idiot is from its target compared to how far it could
+// possibly be.
+Idiot.prototype.getRelativeDistance = function() {
+  var targetVector = this.getTargetVector();
+  return vectorMagnitude(targetVector) / maximumPossibleDistanceBetweenTwoMasses;
+};
+
+// Get a value representing how calm the Idiot is.
+Idiot.prototype.getCalmness = function() {
+  return 1 / Math.pow(1/this.getRelativeDistance(), 1/4);
+};
+
+Idiot.prototype.getPupilColor = function() {
+  var red = 0;
+  if (Math.random() < Math.pow(1 - this.getCalmness(), 4) * game.timeDelta) red = 255;
+  return rgbWithOpacity([red, 0, 0], this.getOpacity());
+};
+
+Idiot.prototype.draw = function() {
+  // Draw the shadow.
+  ctx.fillStyle = rgbWithOpacity([0,0,0], this.getOpacity() * 0.5);
+  ctx.beginPath();
+  ctx.arc(this.position.x, this.position.y, this.radius + 3, 0, Math.PI*2);
+  ctx.fill();
+
+  Enemy.prototype.draw.call(this);
+  if (this.died) return;
+
+  var targetVector = this.getTargetVector();
+  var relativeDistance = this.getRelativeDistance();
+
+  var pupilVector = vectorAt(
+    vectorAngle(targetVector),
+    this.radius * Math.pow(relativeDistance, 1/2) * 0.7
+  );
+  var centreOfPupil = forXAndY([this.position, pupilVector], forXAndY.add);
+
+  irisRadius = this.radius * 1/3;
+
+  // Draw the pupil
+  ctx.fillStyle = this.getPupilColor();
+  ctx.beginPath();
+  ctx.arc(centreOfPupil.x, centreOfPupil.y, irisRadius, 0, Math.PI*2);
+  ctx.fill();
 };
 
 
