@@ -710,7 +710,8 @@ function Twitchy(opts) {
   // Since the player gets a warning that we're about to spawn, it's probably
   // okay if we start with enough fuel to not quite reach our target.
   this.fuel = 0.9;
-
+  this.rgbDischarging = [200,30,30];
+  this.rgbWarning = this.rgbDischarging;
 }
 extend(Enemy, Twitchy);
 
@@ -748,7 +749,7 @@ Twitchy.prototype.getCurrentColor = function() {
     }
 
     this.rgb = [brightness, brightness * whiteness, brightness * whiteness];
-  } else this.rgb = [200,30,30];
+  } else this.rgb = this.rgbDischarging;
 
   return Enemy.prototype.getCurrentColor.call(this);
 };
