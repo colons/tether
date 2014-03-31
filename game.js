@@ -663,6 +663,7 @@ function Idiot(opts) {
   this.lubricant = 0.9;
   this.radius = size * 10;
   this.shadowRadius = this.radius + 3;
+  this.shadowOpacity = 0.5;
   this.rgb = [255,255,255];
   this.rgbWarning = [50,50,50];
 }
@@ -704,7 +705,7 @@ Idiot.prototype.drawWarning = function() {
   var coreRadius = (this.shadowRadius)/2 + Math.pow(timeUntilSpawn, 2) * 700;
   ctx.lineWidth = 2 * (this.shadowRadius)/2 * Math.pow(1-timeUntilSpawn, 3);
 
-  ctx.strokeStyle = rgbWithOpacity(this.rgbWarning || this.rgb, (1 - timeUntilSpawn) * this.getOpacity());
+  ctx.strokeStyle = rgbWithOpacity(this.rgbWarning || this.rgb, (1 - timeUntilSpawn) * this.getOpacity() * this.shadowOpacity);
   ctx.beginPath();
   ctx.arc(this.position.x, this.position.y, radius, 0, Math.PI*2);
   ctx.stroke();
@@ -745,7 +746,7 @@ Idiot.prototype.drawIris = function() {
 
 Idiot.prototype.draw = function() {
   // Draw the shadow.
-  ctx.fillStyle = rgbWithOpacity([0,0,0], this.getOpacity() * 0.5);
+  ctx.fillStyle = rgbWithOpacity([0,0,0], this.getOpacity() * this.shadowOpacity);
   ctx.beginPath();
   ctx.arc(this.position.x, this.position.y, this.shadowRadius, 0, Math.PI*2);
   ctx.fill();
