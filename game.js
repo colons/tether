@@ -659,7 +659,9 @@ function Idiot(opts) {
 
   var size = opts.size || 0.5 + Math.random();
 
-  this.mass = size;
+  // make it slower on smaller screens
+  this.mass = size * (1500/maximumPossibleDistanceBetweenTwoMasses);
+
   this.lubricant = 0.9;
   this.radius = size * 10;
   this.shadowRadius = this.radius + 3;
@@ -1186,7 +1188,7 @@ function Game() {
       aBunchOf(Drifter, 2, 100),
       aBunchOf(Drifter, 2, 5),
 
-      tutorialFor(Idiot, {size: 2}),
+      tutorialFor(Idiot, {size: 1.5}),
       aBunchOf(Idiot, 4, 100),
       aBunchOf(Idiot, 5, 10),
 
