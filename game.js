@@ -534,7 +534,6 @@ function Enemy(opts) {
   this.spawnAt = opts.spawnAt;
   this.wave = opts.wave;
   this.target = this.getTarget();
-  console.log(this.target.constructor.name);
 }
 extend(Mass, Enemy);
 
