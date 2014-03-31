@@ -1066,12 +1066,12 @@ function autoWave(difficulty) {
 
   if (difficulty % 2) {
     // this is gonna be a wave of random enemy types
-    totalSpawns = 15;
+    totalSpawns = 15 + difficulty;
     localEnemyPool = enemyPool;
   } else {
     // this is gonna be a wave of just one enemy
     localEnemyPool = [enemyPool[difficulty/2 % enemyPool.length]];
-    totalSpawns = 10;
+    totalSpawns = 10 + difficulty;
   }
 
   function AutoWave() {
