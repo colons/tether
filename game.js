@@ -763,6 +763,7 @@ Idiot.prototype.draw = function() {
   ctx.arc(this.position.x, this.position.y, this.shadowRadius, 0, Math.PI*2);
   ctx.fill();
 
+  this.visibleRadius = this.radius * Math.pow(this.awakeness(), 1/6);
   Enemy.prototype.draw.call(this);
 
   if (this.died) return;  // dead idiots should not have an iris
