@@ -1119,7 +1119,7 @@ var achievements = {
   },
   handsFree: {
     name: 'Hands-free',
-    description: 'Score three points without moving the tether'
+    description: 'Score five points without moving the tether'
   }
 };
 
@@ -1233,7 +1233,7 @@ function Game() {
       unlockAchievement('lowRes');
     }
 
-    if (self.tether.pointsScoredSinceLastInteraction >= 3) {
+    if (self.tether.pointsScoredSinceLastInteraction >= 5) {
       unlockAchievement('handsFree');
     }
   };
