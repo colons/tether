@@ -1549,7 +1549,10 @@ function Game() {
         indicatedPosition = game.tether.lastMousePosition;
       }
       var distanceFromCorner = vectorMagnitude(lineDelta([indicatedPosition, {x: width, y: height}]));
-      var distanceRange = [100, 300];
+      var distanceRange = [
+        maximumPossibleDistanceBetweenTwoMasses/10,
+        maximumPossibleDistanceBetweenTwoMasses/4
+      ];
       var hintOpacity;
 
       if (distanceFromCorner > distanceRange[1]) hintOpacity = 1;
