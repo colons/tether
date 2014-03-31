@@ -531,11 +531,17 @@ function Enemy(opts) {
   this.exhausts = [];
   this.spawned = false;
 
-  this.target = opts.target;
   this.spawnAt = opts.spawnAt;
   this.wave = opts.wave;
+  this.target = this.getTarget();
+  console.log(this.target.constructor.name);
 }
 extend(Mass, Enemy);
+
+// get the array of targets that this enemy can choose from
+Enemy.prototype.getTarget = function() {
+  return game.player;
+};
 
 Enemy.prototype.randomSpawnPosition = function() {
   return somewhereInTheViewport(this.radius);
@@ -618,6 +624,10 @@ function Drifter(opts) {
 }
 extend(Enemy, Drifter);
 
+Drifter.prototype.getTarget = function() {
+  return game.tether;
+};
+
 Drifter.prototype.randomSpawnPosition = function() {
   // If a Drifter spawns close to the edge, it's actually *really difficult* to
   // kill, so we limit outselves to the centre half of the viewport.
@@ -637,7 +647,7 @@ Drifter.prototype.step = function() {
 
     var error = Math.random() + 1;
     if (Math.random() > 0.5) error *= -1;
-    this.thrustAngle += error/3;
+    this.thrustAngle += error/5;
   }
 
   if (!this.died) {
@@ -947,11 +957,6 @@ Wave.prototype.step = function() {
   if (this.doneSpawningEnemies && this.remainingLivingEnemies === 0 && !this.hasEnemiesWorthDrawing) this.complete = true;
 };
 
-Wave.prototype.randomTarget = function() {
-  if (Math.random() > 0.5) return game.player;
-  else return game.tether;
-};
-
 Wave.prototype.draw = function() {
   this.hasEnemiesWorthDrawing = false;
 
@@ -995,7 +1000,6 @@ Wave.prototype.spawnEnemies = function() {
     if (timeUntilSpawn <= 0) {
       var opts = spawn.opts || {};
 
-      opts.target = spawn.target || this.randomTarget();
       opts.spawnAt = game.timeElapsed + this.spawnWarningDuration;
       opts.wave = this;
 
