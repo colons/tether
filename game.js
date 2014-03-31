@@ -1188,7 +1188,7 @@ function Game() {
 
     self.waveIndex = waveIndex || 0;
     self.waves = [
-      tutorialFor(Drifter, {size: 2}),
+      tutorialFor(Drifter),
       aBunchOf(Drifter, 2, 100),
       aBunchOf(Drifter, 2, 5),
 
