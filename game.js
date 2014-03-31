@@ -464,10 +464,10 @@ function Player(tether) {
   this.radius = 10;
   this.walls = true;
   this.teleportTo({
-    x: (width / 10) * 9,
-    y: height / 2
+    x: Math.min((width / 10) * 9, (width / 2) + 200),
+    y: 5 * (height / 9)
   });
-  this.velocity = {x: 0, y: -height/50};
+  this.velocity = {x: 0, y: -height/80};
   this.bounciness = 0.4;
 
   this.tether = tether;
@@ -1119,7 +1119,7 @@ var achievements = {
   },
   handsFree: {
     name: 'Hands-free',
-    description: 'Score five points without moving the tether'
+    description: 'Score five points in a row without moving the tether'
   }
 };
 
