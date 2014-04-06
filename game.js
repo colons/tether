@@ -892,8 +892,9 @@ Jumper.prototype.step = function() {
 Jumper.prototype.draw = function() {
   Enemy.prototype.draw.call(this);
 
-  if (!this.died) {
-    var currentDrawnDelta = forXAndY([this.teleportDelta, {x: this.fuel, y: this.fuel}], forXAndY.multiply);
+  if (!this.died && this.fuel !== 0) {
+    var extent = Math.pow(1 - this.fuel, 1/2);
+    var currentDrawnDelta = forXAndY([this.teleportDelta, {x: extent, y: extent}], forXAndY.multiply);
     var lineStart = forXAndY([this.position, currentDrawnDelta], forXAndY.add);
     ctx.strokeStyle = this.getCurrentColor();
     ctx.beginPath();
