@@ -892,15 +892,20 @@ Jumper.prototype.step = function() {
 Jumper.prototype.draw = function() {
   Enemy.prototype.draw.call(this);
 
-  if (!this.died && this.fuel !== 0) {
-    var extent = Math.pow(1 - this.fuel, 1/2);
+  if (!this.died && this.fuel !== 0 && this.fuel < 1) {
+    var extent = Math.pow(1 - this.fuel, 2.5);
     var currentDrawnDelta = forXAndY([this.teleportDelta, {x: extent, y: extent}], forXAndY.multiply);
     var lineStart = forXAndY([this.position, currentDrawnDelta], forXAndY.add);
-    ctx.strokeStyle = this.getCurrentColor();
+    var timeSinceTick = (this.fuel * 4) % 1;
+    var tick = (this.fuel * 4) - timeSinceTick;
+
+    ctx.lineWidth = tick/timeSinceTick;
+    ctx.strokeStyle = rgbWithOpacity(this.rgb, timeSinceTick);
     ctx.beginPath();
     ctx.moveTo(lineStart.x, lineStart.y);
     ctx.lineTo(this.nextPosition.x, this.nextPosition.y);
     ctx.stroke();
+    ctx.lineWidth = 1;
   }
 };
 
