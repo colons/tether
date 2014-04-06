@@ -914,7 +914,7 @@ Jumper.prototype.die = function() {
   // forces are exerted
   this.reactsToForce = true;
   this.velocity = forXAndY([this.teleportDelta, {x: 0.1, y: 0.1}], forXAndY.multiply);
-  Enemy.prototype.die.call(this);
+  Enemy.prototype.die.apply(this, arguments);
 };
 
 /* EFFECTS */
