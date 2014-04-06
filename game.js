@@ -535,6 +535,9 @@ function Enemy(opts) {
   this.exhausts = [];
   this.spawned = false;
 
+  this.invincible = false;  // can not die
+  this.harmless = false;  // can not kill
+
   this.spawnAt = opts.spawnAt;
   this.wave = opts.wave;
   this.target = this.getTarget();
@@ -867,10 +870,14 @@ extend(Enemy, Jumper);
 
 Jumper.prototype.step = function() {
   if (this.fuel >= 1 && !this.died) {
+    this.invincible = false;
+    this.harmless = false;
     this.fuel = 0;
-    this.setPosition(this.nextPosition);
     this.nextPosition = somewhereInTheViewport();
+    this.setPosition(this.nextPosition);
   } else {
+    this.invincible = true;
+    this.harmless = true;
     this.fuel += (game.timeDelta * this.chargeRate);
 
     // Because collision detection is fucked if you don't call setPosition every
@@ -1368,7 +1375,8 @@ function Game() {
 
     for (var i = 0; i < self.wave.enemies.length; i++) {
       var enemy = self.wave.enemies[i];
-      if (enemy.died || !enemy.spawned) {
+
+      if (enemy.died || !enemy.spawned || enemy.invincible) {
         continue;
       }
 
@@ -1397,7 +1405,8 @@ function Game() {
 
     for (var i = 0; i < self.wave.enemies.length; i++) {
       var enemy = self.wave.enemies[i];
-      if (enemy.died || !enemy.spawned) {
+
+      if (enemy.died || !enemy.spawned || enemy.harmless) {
         continue;
       }
 
