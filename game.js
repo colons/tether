@@ -865,6 +865,7 @@ function Jumper(opts) {
   this.chargeRate = 0.01;
   this.nextPosition = somewhereInTheViewport();
   this.reactsToForce = false;
+  this.teleportDelta = {x: 0, y: 0};
 }
 extend(Enemy, Jumper);
 
@@ -873,6 +874,7 @@ Jumper.prototype.step = function() {
     this.invincible = false;
     this.harmless = false;
     this.fuel = 0;
+    this.teleportDelta = lineDelta([this.position, this.nextPosition]);
     this.nextPosition = somewhereInTheViewport();
     this.setPosition(this.nextPosition);
   } else {
@@ -891,8 +893,7 @@ Jumper.prototype.draw = function() {
   Enemy.prototype.draw.call(this);
 
   if (!this.died) {
-    var teleportDelta = lineDelta([this.position, this.nextPosition]);
-    var currentDrawnDelta = forXAndY([teleportDelta, {x: this.fuel, y: this.fuel}], forXAndY.multiply);
+    var currentDrawnDelta = forXAndY([this.teleportDelta, {x: this.fuel, y: this.fuel}], forXAndY.multiply);
     var lineStart = forXAndY([this.position, currentDrawnDelta], forXAndY.add);
     ctx.strokeStyle = this.getCurrentColor();
     ctx.beginPath();
@@ -906,7 +907,7 @@ Jumper.prototype.die = function() {
   // Derive a velocity from our previous teleport and become a mass upon which
   // forces are exerted
   this.reactsToForce = true;
-  this.velocity = forXAndY([lineDelta([this.positionOnPreviousFrame, this.position]), {x: 0.1, y: 0.1}], forXAndY.multiply);
+  this.velocity = forXAndY([this.teleportDelta, {x: 0.1, y: 0.1}], forXAndY.multiply);
   Enemy.prototype.die.call(this);
 };
 
