@@ -1707,7 +1707,7 @@ function Game() {
   self.reset(0);
 }
 
-var enemyPool = [Drifter, Idiot, Twitchy];
+var enemyPool = [Drifter, Idiot, Twitchy, Jumper];
 /* FIRE */
 syncAchievements();
 game = new Game();
