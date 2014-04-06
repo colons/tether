@@ -76,10 +76,13 @@ forXAndY.subtract = function(a, b) {return a - b;};
 forXAndY.invSubtract = function(a, b) {return b - a;};
 forXAndY.add = function() {
   var s = 0;
-  for (var i = 0; i < arguments.length; i++) {
-    s += arguments[i];
-  }
+  for (var i = 0; i < arguments.length; i++) s += arguments[i];
   return s;
+};
+forXAndY.multiply = function() {
+  var p = 1;
+  for (var i = 0; i < arguments.length; i++) p *= arguments[i];
+  return p;
 };
 
 function randomisedVector(vector, potentialMagnitude) {
@@ -233,6 +236,7 @@ Mass.prototype = {
   walls: false,
   bounciness: 0,
   rgb: [60,60,60],
+  reactsToForce: true,
 
   journeySincePreviousFrame: function() {
     return [this.positionOnPreviousFrame, this.position];
@@ -299,7 +303,7 @@ Mass.prototype = {
   },
 
   step: function() {
-    this.reactToForce();
+    if (this.reactsToForce) this.reactToForce();
   },
 
   getOpacity: function() {
@@ -845,6 +849,60 @@ Twitchy.prototype.draw = function() {
 };
 
 
+// A barely-contained enemy that teleports from point to point with a visual
+// indication that that is what is happening. Has a similar fuel-based API
+// to Twitchy.
+function Jumper(opts) {
+  Enemy.call(this, opts);
+
+  // Since no force is ever exerted, we don't need to worry about mass or
+  // lubricant.
+  this.radius = 10;
+  this.fuel = 0;
+  this.chargeRate = 0.01;
+  this.nextPosition = somewhereInTheViewport();
+  this.reactsToForce = false;
+}
+extend(Enemy, Jumper);
+
+Jumper.prototype.step = function() {
+  if (this.fuel >= 1 && !this.died) {
+    this.fuel = 0;
+    this.setPosition(this.nextPosition);
+    this.nextPosition = somewhereInTheViewport();
+  } else {
+    this.fuel += (game.timeDelta * this.chargeRate);
+
+    // Because collision detection is fucked if you don't call setPosition every
+    // step:
+    this.setPosition(this.position);
+  }
+  Enemy.prototype.step.call(this);
+};
+
+Jumper.prototype.draw = function() {
+  Enemy.prototype.draw.call(this);
+
+  if (!this.died) {
+    var teleportDelta = lineDelta([this.position, this.nextPosition]);
+    var currentDrawnDelta = forXAndY([teleportDelta, {x: this.fuel, y: this.fuel}], forXAndY.multiply);
+    var lineStart = forXAndY([this.position, currentDrawnDelta], forXAndY.add);
+    ctx.strokeStyle = this.getCurrentColor();
+    ctx.beginPath();
+    ctx.moveTo(lineStart.x, lineStart.y);
+    ctx.lineTo(this.nextPosition.x, this.nextPosition.y);
+    ctx.stroke();
+  }
+};
+
+Jumper.prototype.die = function() {
+  // Derive a velocity from our previous teleport and become a mass upon which
+  // forces are exerted
+  this.reactsToForce = true;
+  this.velocity = forXAndY([lineDelta([this.positionOnPreviousFrame, this.position]), {x: 0.1, y: 0.1}], forXAndY.multiply);
+  Enemy.prototype.die.call(this);
+};
+
 /* EFFECTS */
 function Particle() {
   Mass.call(this);
@@ -1188,6 +1246,8 @@ function Game() {
 
     self.waveIndex = waveIndex || 0;
     self.waves = [
+      tutorialFor(Jumper),
+
       tutorialFor(Drifter),
       aBunchOf(Drifter, 2, 100),
       aBunchOf(Drifter, 2, 5),
@@ -1315,18 +1375,19 @@ function Game() {
       var journey = enemy.journeySincePreviousFrame();
       var cableLines = linesFromPolygon(cableAreaCovered);
 
-      if (pointInPolygon(enemy.position, cableAreaCovered)) {
-        enemy.die(true);
-        continue;
-      }
-
       for (var ci = 0; ci < cableLines.length; ci++) {
         var intersection = getIntersection(journey, cableLines[ci]);
 
         if (intersection.onLine1 && intersection.onLine2) {
+          enemy.position = intersection;
           enemy.die(true);
           break;
         }
+      }
+
+      if (pointInPolygon(enemy.position, cableAreaCovered)) {
+        enemy.die(true);
+        continue;
       }
     }
   };
