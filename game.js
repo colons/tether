@@ -874,10 +874,10 @@ Jumper.prototype.step = function() {
     this.invincible = false;
     this.harmless = false;
     this.fuel = 0;
-    this.teleportDelta = lineDelta([this.position, this.nextPosition]);
-    this.nextPosition = somewhereInTheViewport();
     this.setPosition(this.nextPosition);
+    this.nextPosition = somewhereInTheViewport();
   } else {
+    this.teleportDelta = lineDelta([this.position, this.nextPosition]);
     this.invincible = true;
     this.harmless = true;
     this.fuel += (game.timeDelta * this.chargeRate);
