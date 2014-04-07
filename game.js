@@ -399,7 +399,7 @@ function BackgroundPart(i) {
   this.baseRadius = 2 * Math.max(width, height) / i;
   this.radius = 1;
   this.bounciness = 1;
-  this.velocity = vectorAt(Math.PI * 2 * Math.random(), i * Math.random() * 0.2);
+  this.velocity = vectorAt(Math.PI * 2 * Math.random(), i * Math.random());
   this.teleportTo(somewhereInTheViewport());
   this.walls = true;
   this.color = rgbWithOpacity([127,127,127], 0.005 * i);
@@ -410,6 +410,7 @@ BackgroundPart.prototype.getCurrentColor = function() {
 };
 BackgroundPart.prototype.step = function() {
   this.visibleRadius = 1/music.timeSinceBeat() * 20 + this.baseRadius;
+  Mass.prototype.step.call(this);
 };
 
 function Background() {
