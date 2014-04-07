@@ -928,12 +928,15 @@ extend(Enemy, Jumper);
 
 Jumper.prototype.step = function() {
   if (this.fuel >= 1 && !this.died) {
+    // Teleport!
     this.invincible = false;
     this.harmless = false;
     this.fuel = 0;
+    for (var i = 0; i < 30; i++) new TeleportDust(this);
     this.setPosition(this.nextPosition);
     this.nextPosition = somewhereInTheViewport();
   } else {
+    // Don't teleport.
     this.teleportDelta = lineDelta([this.position, this.nextPosition]);
     this.invincible = true;
     this.harmless = true;
@@ -947,10 +950,21 @@ Jumper.prototype.step = function() {
 };
 
 Jumper.prototype.draw = function() {
-  Enemy.prototype.draw.call(this);
-
   if (!this.died && this.fuel !== 0 && this.fuel < 1) {
-    var extent = Math.pow(1 - this.fuel, 2.5);
+
+    var dashInterval = 1/10;
+
+    for (var i = 0; i < 1; i += dashInterval) {
+      ctx.strokeStyle = this.getCurrentColor();
+      ctx.beginPath();
+      var startAngle = (this.fuel * 4) + (i * Math.PI*2);
+      var endAngle = startAngle + (Math.PI * dashInterval * 0.4);
+      ctx.arc(this.position.x, this.position.y, this.radius, startAngle, endAngle);
+      ctx.stroke();
+    }
+
+    // draw the next indicator
+    var extent = Math.pow(this.fuel, 2.5);
     var currentDrawnDelta = forXAndY([this.teleportDelta, {x: extent, y: extent}], forXAndY.multiply);
     var lineStart = forXAndY([this.position, currentDrawnDelta], forXAndY.add);
     var timeSinceTick = (this.fuel * 4) % 1;
@@ -960,7 +974,7 @@ Jumper.prototype.draw = function() {
     ctx.strokeStyle = rgbWithOpacity(this.rgb, timeSinceTick);
     ctx.beginPath();
     ctx.moveTo(lineStart.x, lineStart.y);
-    ctx.lineTo(this.nextPosition.x, this.nextPosition.y);
+    ctx.lineTo(this.position.x, this.position.y);
     ctx.stroke();
     ctx.lineWidth = 1;
   }
@@ -1055,6 +1069,34 @@ Exhaust.prototype.rgbForIntensity = function(intensity) {
     (intensity * 200),
     50 + (intensity * 100),
     50 + (intensity * 100)
+  ];
+};
+
+
+// Residue left over from a teleport.
+function TeleportDust(source) {
+  console.log('hi');
+
+  var randomDelta = vectorAt(Math.random() * Math.PI * 2, Math.random() * source.radius * 0.1);
+
+  var velocityMultiplier = Math.random() * 1/10;
+  var baseVelocity = forXAndY([source.teleportDelta, {x: velocityMultiplier, y: velocityMultiplier}], forXAndY.multiply);
+  var velocity = forXAndY([baseVelocity, randomDelta], forXAndY.add);
+
+  var distanceFromStart = Math.random();
+  var vectorFromStart = forXAndY([source.teleportDelta, {x: distanceFromStart, y: distanceFromStart}], forXAndY.multiply);
+  var basePosition = forXAndY([source.position, vectorFromStart], forXAndY.add);
+  var position = forXAndY([basePosition, randomDelta], forXAndY.add);
+
+  FireParticle.call(this, position, velocity);
+}
+extend(FireParticle, TeleportDust);
+
+TeleportDust.prototype.rgbForIntensity = function(intensity) {
+  return [
+    100 + (intensity * 100),
+    (intensity * 200),
+    60 + (intensity * 150),
   ];
 };
 
