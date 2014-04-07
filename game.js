@@ -224,7 +224,12 @@ initCanvas();
 
 
 function Music() {
-  var element = new Audio('bgm.mp3');
+  var path;
+
+  if (INFO) path = 'test.mp3';
+  else path = 'bgm.mp3';
+
+  var element = new Audio(path);
 
   if (typeof element.loop === 'boolean') {
     if (INFO) console.log('using element.loop for looping');
