@@ -254,7 +254,7 @@ Music.prototype = {
 
   bpm: 90,
   url: 'bgm.mp3',
-  delayCompensation: 0.1,
+  delayCompensation: 0.03,
 
   totalBeat: function() {
     return ((this.element.currentTime + this.delayCompensation)/60) * this.bpm;
@@ -1341,6 +1341,7 @@ function Game() {
   };
 
   self.setSpeed = function(speed) {
+    music.element.playbackRate = speed/self.normalSpeed;
     self.speed = speed;
   };
 
