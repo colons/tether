@@ -615,6 +615,10 @@ Enemy.prototype.step = function() {
 // If the player has died in the process of killing the enemy, they do not
 // deserve to be rewarded.
 Enemy.prototype.die = function(playerDeservesAchievement) {
+  if (this.died) {
+    if (INFO) console.log('tried to kill enemy that already died');
+    return;
+  }
   if (playerDeservesAchievement) {
     unlockAchievement('kill');
 
@@ -1297,7 +1301,7 @@ function Game() {
     self.ended = null;
     self.score = 0;
     self.enemyTypesKilled = [];
-    self.lastPointScored = 0;
+    self.lastPointScoredAt = 0;
     self.timeElapsed = 0;
     self.normalSpeed = 0.04;
     self.slowSpeed = self.normalSpeed / 100;
@@ -1350,7 +1354,7 @@ function Game() {
 
   self.incrementScore = function(incr) {
     if (self.ended) return;
-    self.lastPointScored = self.timeElapsed;
+    self.lastPointScoredAt = self.timeElapsed;
     self.score += incr;
     self.tether.pointsScoredSinceLastInteraction += incr;
 
@@ -1365,7 +1369,7 @@ function Game() {
 
   self.getIntensity = function() {
     // Get a number representing how the player should be feeling.
-    return 1/(1 + (self.timeElapsed - self.lastPointScored));
+    return 1/(1 + (self.timeElapsed - self.lastPointScoredAt));
   };
 
   self.stepParticles = function() {
@@ -1437,19 +1441,21 @@ function Game() {
       var journey = enemy.journeySincePreviousFrame();
       var cableLines = linesFromPolygon(cableAreaCovered);
 
+      if (pointInPolygon(enemy.position, cableAreaCovered)) {
+        enemy.die(true);
+        continue;
+      }
+
       for (var ci = 0; ci < cableLines.length; ci++) {
         var intersection = getIntersection(journey, cableLines[ci]);
 
         if (intersection.onLine1 && intersection.onLine2) {
+          // This is an instance where not calling setPosition is okay because
+          // this mass has already moved this step.
           enemy.position = intersection;
           enemy.die(true);
           break;
         }
-      }
-
-      if (pointInPolygon(enemy.position, cableAreaCovered)) {
-        enemy.die(true);
-        continue;
       }
     }
   };
@@ -1708,7 +1714,8 @@ function Game() {
     var info = {
       beat: Math.floor(music.beat()),
       time: self.timeElapsed.toFixed(2),
-      fps: (1000/self.realTimeDelta).toFixed()
+      fps: (1000/self.realTimeDelta).toFixed(),
+      score: game.score
     };
 
     if (self.started) {
