@@ -1311,7 +1311,7 @@ function Game() {
     self.timeElapsed = 0;
     self.normalSpeed = 0.04;
     self.slowSpeed = self.normalSpeed / 100;
-    self.speed = self.normalSpeed;
+    self.setSpeed(self.normalSpeed);
 
     self.started = false;
 
@@ -1338,6 +1338,10 @@ function Game() {
     self.tether = new Tether();
     self.player = new Player(self.tether);
     self.cable = new Cable(self.tether, self.player);
+  };
+
+  self.setSpeed = function(speed) {
+    self.speed = speed;
   };
 
   self.start = function() {
@@ -1766,7 +1770,7 @@ function Game() {
     self.ended = self.timeElapsed;
     self.tether.locked = true;
     self.tether.unlockable = false;
-    self.speed = self.slowSpeed;
+    self.setSpeed(self.slowSpeed);
     ga('send', 'event', 'game', 'die', 'score', self.score);
   };
 
