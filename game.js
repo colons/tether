@@ -2,6 +2,7 @@ var DEBUG = (window.location.hash === '#DEBUG');
 var INFO = (DEBUG || window.location.hash === '#INFO');
 
 var game;
+var music;
 var canvas;
 var ctx;
 var devicePixelRatio = window.devicePixelRatio || 1;
@@ -221,6 +222,49 @@ function edgesOfCanvas() {
 
 initCanvas();
 
+
+function Music() {
+  var element = new Audio('bgm.mp3');
+
+  if (typeof element.loop === 'boolean') {
+    if (INFO) console.log('using element.loop for looping');
+    element.loop = true;
+  } else {
+    if (INFO) console.log('using event listener for looping');
+    element.addEventListener('ended', function() {
+      element.currentTime = 0;
+      element.play();
+    });
+  }
+
+  element.play();
+
+  this.element = element;
+}
+Music.prototype = {
+  // XXX gonna need some callback functions here; onNextDownbeat, onNextBeat,
+  // etc., as well as timeOfNextBeat and such.
+
+  // XXX Also gonna need to slow the music down when the game slows down.
+
+  bpm: 90,
+  url: 'bgm.mp3',
+  delayCompensation: 0.1,
+
+  totalBeat: function() {
+    return ((this.element.currentTime + this.delayCompensation)/60) * this.bpm;
+  },
+
+  beat: function() {
+      return (music.totalBeat() % 4) + 1;
+  },
+
+  timeSinceBeat: function() {
+    return this.beat() % 1;
+  }
+};
+
+
 /* GAME OBJECTS */
 // The basic object of our physics engine. A circle with mass, position, velocity and forces.
 function Mass() {}
@@ -352,7 +396,7 @@ Mass.prototype = {
 // Aesthetic garbage
 function BackgroundPart(i) {
   Mass.call(this);
-  this.visibleRadius = 2 * Math.max(width, height) / i;
+  this.baseRadius = 2 * Math.max(width, height) / i;
   this.radius = 1;
   this.bounciness = 1;
   this.velocity = vectorAt(Math.PI * 2 * Math.random(), i * Math.random() * 0.2);
@@ -363,6 +407,9 @@ function BackgroundPart(i) {
 extend(Mass, BackgroundPart);
 BackgroundPart.prototype.getCurrentColor = function() {
   return this.color;
+};
+BackgroundPart.prototype.step = function() {
+  this.visibleRadius = 1/music.timeSinceBeat() * 20 + this.baseRadius;
 };
 
 function Background() {
@@ -1659,6 +1706,7 @@ function Game() {
   self.drawInfo = function() {
     var fromBottom = 7;
     var info = {
+      beat: Math.floor(music.beat()),
       time: self.timeElapsed.toFixed(2),
       fps: (1000/self.realTimeDelta).toFixed()
     };
@@ -1715,6 +1763,8 @@ function Game() {
 var enemyPool = [Drifter, Idiot, Twitchy, Jumper];
 /* FIRE */
 syncAchievements();
+
+music = new Music();
 game = new Game();
 
 function restartGameIfEnded(e) {
