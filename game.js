@@ -975,7 +975,12 @@ Jumper.prototype.draw = function() {
     var fuel = music.measure() % 1;
     var extent = Math.pow(fuel, 2.5);
     var currentDrawnDelta = forXAndY([this.teleportDelta, {x: extent, y: extent}], forXAndY.multiply);
-    var lineStart = forXAndY([this.position, currentDrawnDelta], forXAndY.add);
+
+    // start drawing the line at the edge of the circle
+    var edgeVector = vectorAt(vectorAngle(this.teleportDelta), this.radius);
+    var edgePosition = forXAndY([this.position, edgeVector], forXAndY.add);
+
+    var lineStart = forXAndY([edgePosition, currentDrawnDelta], forXAndY.add);
     var timeSinceTick = (fuel * 4) % 1;
     var tick = (fuel * 4) - timeSinceTick;
 
@@ -983,7 +988,7 @@ Jumper.prototype.draw = function() {
     ctx.strokeStyle = rgbWithOpacity(this.rgb, timeSinceTick);
     ctx.beginPath();
     ctx.moveTo(lineStart.x, lineStart.y);
-    ctx.lineTo(this.position.x, this.position.y);
+    ctx.lineTo(edgePosition.x, edgePosition.y);
     ctx.stroke();
     ctx.lineWidth = 1;
   }
