@@ -1096,7 +1096,7 @@ TeleportDust.prototype.rgbForIntensity = function(intensity) {
   return [
     100 + (intensity * 100),
     (intensity * 200),
-    60 + (intensity * 150),
+    60 + (intensity * 150)
   ];
 };
 
