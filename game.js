@@ -260,6 +260,10 @@ Music.prototype = {
     return ((this.element.currentTime + this.delayCompensation)/60) * this.bpm;
   },
 
+  measure: function() {
+    return music.totalBeat() / 4;
+  },
+
   beat: function() {
       return (music.totalBeat() % 4) + 1;
   },
@@ -910,15 +914,14 @@ Twitchy.prototype.draw = function() {
 
 
 // A barely-contained enemy that teleports from point to point with a visual
-// indication that that is what is happening. Has a similar fuel-based API
-// to Twitchy.
+// indication that that is what is happening.
 function Jumper(opts) {
   Enemy.call(this, opts);
 
   // Since no force is ever exerted, we don't need to worry about mass or
   // lubricant.
   this.radius = 10;
-  this.fuel = 0;
+  this.lastJumped = null;
   this.chargeRate = 0.01;
   this.nextPosition = somewhereInTheViewport();
   this.reactsToForce = false;
@@ -927,48 +930,54 @@ function Jumper(opts) {
 extend(Enemy, Jumper);
 
 Jumper.prototype.step = function() {
-  if (this.fuel >= 1 && !this.died) {
-    // Teleport!
-    this.invincible = false;
-    this.harmless = false;
-    this.fuel = 0;
-    for (var i = 0; i < 30; i++) new TeleportDust(this);
-    this.setPosition(this.nextPosition);
-    this.nextPosition = somewhereInTheViewport();
-  } else {
-    // Don't teleport.
-    this.teleportDelta = lineDelta([this.position, this.nextPosition]);
-    this.invincible = true;
-    this.harmless = true;
-    this.fuel += (game.timeDelta * this.chargeRate);
+  var measure = Math.floor(music.measure());
 
-    // Because collision detection is fucked if you don't call setPosition every
-    // step:
-    this.setPosition(this.position);
+  if (this.lastJumped === null) this.lastJumped = measure;
+
+  if (!this.died) {
+    if (measure !== this.lastJumped) {
+      // Teleport!
+      this.invincible = false;
+      this.harmless = false;
+      for (var i = 0; i < 30; i++) new TeleportDust(this);
+      this.setPosition(this.nextPosition);
+      this.nextPosition = somewhereInTheViewport();
+      this.lastJumped = measure;
+    } else {
+      // Don't teleport.
+      this.teleportDelta = lineDelta([this.position, this.nextPosition]);
+      this.invincible = true;
+      this.harmless = true;
+
+      // Because collision detection is fucked if you don't call setPosition every
+      // step:
+      this.setPosition(this.position);
+    }
   }
   Enemy.prototype.step.call(this);
 };
 
 Jumper.prototype.draw = function() {
-  if (!this.died && this.fuel !== 0 && this.fuel < 1) {
+  if (!this.died) {
 
     var dashInterval = 1/10;
 
     for (var i = 0; i < 1; i += dashInterval) {
       ctx.strokeStyle = this.getCurrentColor();
       ctx.beginPath();
-      var startAngle = (this.fuel * 4) + (i * Math.PI*2);
+      var startAngle = (game.timeElapsed * 4) + (i * Math.PI*2);
       var endAngle = startAngle + (Math.PI * dashInterval * 0.4);
       ctx.arc(this.position.x, this.position.y, this.radius, startAngle, endAngle);
       ctx.stroke();
     }
 
     // draw the next indicator
-    var extent = Math.pow(this.fuel, 2.5);
+    var fuel = music.measure() % 1;
+    var extent = Math.pow(fuel, 2.5);
     var currentDrawnDelta = forXAndY([this.teleportDelta, {x: extent, y: extent}], forXAndY.multiply);
     var lineStart = forXAndY([this.position, currentDrawnDelta], forXAndY.add);
-    var timeSinceTick = (this.fuel * 4) % 1;
-    var tick = (this.fuel * 4) - timeSinceTick;
+    var timeSinceTick = (fuel * 4) % 1;
+    var tick = (fuel * 4) - timeSinceTick;
 
     ctx.lineWidth = tick/timeSinceTick;
     ctx.strokeStyle = rgbWithOpacity(this.rgb, timeSinceTick);
@@ -1075,8 +1084,6 @@ Exhaust.prototype.rgbForIntensity = function(intensity) {
 
 // Residue left over from a teleport.
 function TeleportDust(source) {
-  console.log('hi');
-
   var randomDelta = vectorAt(Math.random() * Math.PI * 2, Math.random() * source.radius * 0.1);
 
   var velocityMultiplier = Math.random() * 1/10;
@@ -1766,6 +1773,7 @@ function Game() {
     var fromBottom = 7;
     var info = {
       beat: Math.floor(music.beat()),
+      measure: Math.floor(music.measure()) + 1,
       time: self.timeElapsed.toFixed(2),
       fps: (1000/self.realTimeDelta).toFixed(),
       score: game.score
