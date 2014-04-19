@@ -1037,12 +1037,17 @@ Jumper.prototype.draw = function() {
     var dashInterval = 1/10;
 
     for (var i = 0; i < 1; i += dashInterval) {
-      ctx.strokeStyle = this.getCurrentColor();
-      ctx.beginPath();
-      var startAngle = (game.timeElapsed * 4) + (i * Math.PI*2);
-      var endAngle = startAngle + (Math.PI * dashInterval * 0.4);
-      ctx.arc(this.position.x, this.position.y, this.radius, startAngle, endAngle);
-      ctx.stroke();
+      var startAngle = (game.timeElapsed) + (i * Math.PI*2);
+
+      draw({
+        type: 'arc',
+        stroke: true,
+        strokeStyle: this.getCurrentColor(),
+        arcCenter: this.position,
+        arcStart: startAngle,
+        arcFinish: startAngle + (Math.PI * dashInterval * 0.4),
+        arcRadius: this.radius
+      });
     }
 
     // draw the next indicator
@@ -1058,13 +1063,13 @@ Jumper.prototype.draw = function() {
     var timeSinceTick = (fuel * 4) % 1;
     var tick = (fuel * 4) - timeSinceTick;
 
-    ctx.lineWidth = tick/timeSinceTick;
-    ctx.strokeStyle = rgbWithOpacity(this.rgb, timeSinceTick);
-    ctx.beginPath();
-    ctx.moveTo(lineStart.x, lineStart.y);
-    ctx.lineTo(edgePosition.x, edgePosition.y);
-    ctx.stroke();
-    ctx.lineWidth = 1;
+    draw({
+      type: 'line',
+      stroke: true,
+      lineWidth: tick/timeSinceTick,
+      strokeStyle: rgbWithOpacity(this.rgb, timeSinceTick),
+      linePaths: [[lineStart, edgePosition]]
+    });
   }
 };
 
@@ -1444,7 +1449,7 @@ function Game() {
 
     self.waveIndex = waveIndex || 0;
     self.waves = [
-      // tutorialFor(Jumper),
+      tutorialFor(Jumper),
       // aBunchOf(Jumper, 5, 10),
 
       tutorialFor(Drifter),
