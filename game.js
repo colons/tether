@@ -213,7 +213,9 @@ draw.defaults = {
   fill: false,
   stroke: false,
 
-  linePath: [],  // array of positions
+  // linePaths should be an array of arrays of positions. If you're gonna draw
+  // a bunch of similarly-styled lines at once, it's better to only draw once.
+  linePaths: [],
 
   arcCenter: undefined,  // position
   arcRadius: 0,
@@ -230,11 +232,15 @@ draw.arc = function(opts) {
 };
 
 draw.line = function(opts) {
-  ctx.moveTo(opts.linePath[0].x, opts.linePath[0].y);
+  for (var ipath = 0; ipath < opts.linePaths.length; ipath++) {
+    var path = opts.linePaths[ipath];
 
-  for (var i = 1; i < opts.linePath.length; i++) {
-    var position = opts.linePath[i];
-    ctx.lineTo(position.x, position.y);
+    ctx.moveTo(path[0].x, path[0].y);
+
+    for (var ipos = 1; ipos < path.length; ipos++) {
+      var position = path[ipos];
+      ctx.lineTo(position.x, position.y);
+    }
   }
 };
 
@@ -624,7 +630,7 @@ function Cable(tether, player) {
       type: 'line',
       stroke: true,
       strokeStyle: 'rgba(20, 20, 200, 1)',
-      linePath: self.line()
+      linePaths: [self.line()]
     });
 
     if (DEBUG) self.drawAreaCoveredThisStep();
@@ -841,15 +847,14 @@ Idiot.prototype.drawWarning = function() {
 
   var timeUntilSpawn = (this.spawnAt - game.timeElapsed) / this.wave.spawnWarningDuration;
 
-  var radius = (this.shadowRadius)/2 + Math.pow(timeUntilSpawn, 2) * 700;
-  var coreRadius = (this.shadowRadius)/2 + Math.pow(timeUntilSpawn, 2) * 700;
-  ctx.lineWidth = 2 * (this.shadowRadius)/2 * Math.pow(1-timeUntilSpawn, 3);
-
-  ctx.strokeStyle = rgbWithOpacity(this.rgbWarning || this.rgb, (1 - timeUntilSpawn) * this.getOpacity() * this.shadowOpacity);
-  ctx.beginPath();
-  ctx.arc(this.position.x, this.position.y, radius, 0, Math.PI*2);
-  ctx.stroke();
-  ctx.lineWidth = 1;
+  draw({
+    type: 'arc',
+    stroke: true,
+    lineWidth: 2 * (this.shadowRadius)/2 * Math.pow(1-timeUntilSpawn, 3),
+    strokeStyle: rgbWithOpacity(this.rgbWarning || this.rgb, (1 - timeUntilSpawn) * this.getOpacity() * this.shadowOpacity),
+    arcCenter: this.position,
+    arcRadius: (this.shadowRadius)/2 + Math.pow(timeUntilSpawn, 2) * 700
+  });
 };
 
 
@@ -876,20 +881,26 @@ Idiot.prototype.drawIris = function() {
 
   var centreOfIris = forXAndY([this.position, irisVector], forXAndY.add);
 
-  irisRadius = (this.radius * 1/3) * awakeness;
+  var irisRadius = (this.radius * 1/3) * awakeness;
 
-  ctx.fillStyle = this.getIrisColor();
-  ctx.beginPath();
-  ctx.arc(centreOfIris.x, centreOfIris.y, irisRadius, 0, Math.PI*2);
-  ctx.fill();
+  draw({
+    type: 'arc',
+    fill: true,
+    fillStyle: this.getIrisColor(),
+    arcCenter: centreOfIris,
+    arcRadius: irisRadius
+  });
 };
 
 Idiot.prototype.draw = function() {
   // Draw the shadow.
-  ctx.fillStyle = rgbWithOpacity([0,0,0], this.getOpacity() * this.shadowOpacity);
-  ctx.beginPath();
-  ctx.arc(this.position.x, this.position.y, this.shadowRadius, 0, Math.PI*2);
-  ctx.fill();
+  draw({
+    type: 'arc',
+    fill: true,
+    fillStyle: rgbWithOpacity([0,0,0], this.getOpacity() * this.shadowOpacity),
+    arcCenter: this.position,
+    arcRadius: this.shadowRadius
+  });
 
   this.visibleRadius = this.radius * Math.pow(this.awakeness(), 1/6);
   Enemy.prototype.draw.call(this);
@@ -963,11 +974,13 @@ Twitchy.prototype.getCurrentColor = function() {
 Twitchy.prototype.draw = function() {
   if (this.charging && this.fuel >= 0) {
     // represent how much fuel we have
-    ctx.fillStyle = rgbWithOpacity([30,30,30], this.getOpacity() * this.fuel);
-    ctx.beginPath();
-    var radius = this.radius * 1.2/this.fuel;
-    ctx.arc(this.position.x, this.position.y, radius, 0, Math.PI*2);
-    ctx.fill();
+    draw({
+      type: 'arc',
+      fill: true,
+      fillStyle: rgbWithOpacity([30,30,30], this.getOpacity() * this.fuel),
+      arcRadius: this.radius * 1.2/this.fuel,
+      arcCenter: this.position
+    });
   }
 
   Enemy.prototype.draw.call(this);
@@ -1108,13 +1121,12 @@ FireParticle.prototype.rgbForIntensity = function(intensity) {
 FireParticle.prototype.draw = function() {
   if (Math.random() < 0.1 * game.timeDelta) return; // flicker
 
-  ctx.strokeStyle = this.getCurrentColor();
-  var endOfStroke = forXAndY([this.position, this.velocity], forXAndY.aPlusHalfB);
-
-  ctx.beginPath();
-  ctx.moveTo(this.position.x, this.position.y);
-  ctx.lineTo(endOfStroke.x, endOfStroke.y);
-  ctx.stroke();
+  draw({
+    type: 'line',
+    stroke: true,
+    strokeStyle: this.getCurrentColor(),
+    linePaths: [[this.position, forXAndY([this.position, this.velocity], forXAndY.aPlusHalfB)]]
+  });
 };
 
 
@@ -1432,8 +1444,8 @@ function Game() {
 
     self.waveIndex = waveIndex || 0;
     self.waves = [
-      tutorialFor(Jumper),
-      aBunchOf(Jumper, 5, 10),
+      // tutorialFor(Jumper),
+      // aBunchOf(Jumper, 5, 10),
 
       tutorialFor(Drifter),
       aBunchOf(Drifter, 2, 100),
