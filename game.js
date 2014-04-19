@@ -187,6 +187,57 @@ function rgbWithOpacity(rgb, opacity) {
   return 'rgba(' + rgbStrings.join(',') + ',' + opacity.toFixed(2) + ')';
 }
 
+/* DRAWING */
+function draw(opts) {
+  for (var key in draw.defaults) {
+    if (!(key in opts)) {
+      opts[key] = draw.defaults[key];
+    }
+  }
+
+  ctx.fillStyle = opts.fillStyle;
+  ctx.strokeStyle = opts.strokeStyle;
+  ctx.lineWidth = opts.lineWidth;
+
+  ctx.beginPath();
+
+  if (opts.type === 'arc') draw.arc(opts);
+  if (opts.type === 'line') draw.line(opts);
+
+  if (opts.fill) ctx.fill();
+  if (opts.stroke) ctx.stroke();
+}
+
+draw.defaults = {
+  type: null,  // 'arc' or 'line'
+  fill: false,
+  stroke: false,
+
+  linePath: [],  // array of positions
+
+  arcCenter: undefined,  // position
+  arcRadius: 0,
+  arcStart: 0,
+  arcFinish: 2 * Math.PI,
+
+  lineWidth: 1,
+  fillStyle: '#000',
+  strokeStyle: '#000'
+};
+
+draw.arc = function(opts) {
+  ctx.arc(opts.arcCenter.x, opts.arcCenter.y, opts.arcRadius, opts.arcStart, opts.arcFinish);
+};
+
+draw.line = function(opts) {
+  ctx.moveTo(opts.linePath[0].x, opts.linePath[0].y);
+
+  for (var i = 1; i < opts.linePath.length; i++) {
+    var position = opts.linePath[i];
+    ctx.lineTo(position.x, position.y);
+  }
+};
+
 /* SETUP */
 function scaleCanvas(ratio) {
   canvas.width = width * ratio;
@@ -372,11 +423,13 @@ Mass.prototype = {
     var radius = this.radius;
     if (this.visibleRadius !== null) radius = this.visibleRadius;
 
-    ctx.fillStyle = this.getCurrentColor();
-    ctx.beginPath();
-
-    ctx.arc(this.position.x, this.position.y, radius, 0, Math.PI*2);
-    ctx.fill();
+    draw({
+      type: 'arc',
+      arcRadius: radius,
+      arcCenter: this.position,
+      fillStyle: this.getCurrentColor(),
+      fill: true
+    });
   },
 
   explode: function() {
@@ -388,16 +441,23 @@ Mass.prototype = {
     }
   },
 
+  focusSegment: function(offset) {
+    var baseAngle = (game.timeElapsed / 30) + Math.cos(game.timeElapsed / 10) * 0.2;
+
+    draw({
+      type: 'arc',
+      stroke: true,
+      arcCenter: this.position,
+      arcStart: baseAngle + offset,
+      arcFinish: baseAngle + Math.PI * 0.5 + offset,
+      arcRadius: 40 + Math.sin(game.timeElapsed / 10) * 10,
+      strokeStyle: rgbWithOpacity([0,0,0], 0.6)
+    });
+  },
+
   focus: function() {
-    ctx.strokeStyle = rgbWithOpacity([0,0,0], 0.6);
-    var radius = 40 + Math.sin(game.timeElapsed / 10) * 10;
-    baseAngle = (game.timeElapsed / 30) + Math.cos(game.timeElapsed / 10) * 0.2;
-    ctx.beginPath();
-    ctx.arc(this.position.x, this.position.y, radius, baseAngle, baseAngle + Math.PI * 0.5);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(this.position.x, this.position.y, radius, baseAngle + Math.PI, baseAngle + Math.PI * 1.5);
-    ctx.stroke();
+    this.focusSegment(0);
+    this.focusSegment(Math.PI);
   }
 };
 
@@ -560,12 +620,13 @@ function Cable(tether, player) {
   };
 
   self.draw = function() {
-    ctx.beginPath();
-    ctx.strokeStyle = 'rgba(20, 20, 200, 1)';
-    var line = self.line();
-    ctx.moveTo(line[0].x, line[0].y);
-    ctx.lineTo(line[1].x, line[1].y);
-    ctx.stroke();
+    draw({
+      type: 'line',
+      stroke: true,
+      strokeStyle: 'rgba(20, 20, 200, 1)',
+      linePath: self.line()
+    });
+
     if (DEBUG) self.drawAreaCoveredThisStep();
   };
 
@@ -667,14 +728,14 @@ Enemy.prototype.drawWarning = function() {
   // as a number between 0 and 1
   var timeUntilSpawn = (this.spawnAt - game.timeElapsed) / this.wave.spawnWarningDuration;
 
-  var radius = (this.visibleRadius || this.radius)/2 + Math.pow(timeUntilSpawn, 2) * 700;
-  ctx.lineWidth = 2 * (this.visibleRadius || this.radius)/2 * Math.pow(1-timeUntilSpawn, 3);
-
-  ctx.strokeStyle = rgbWithOpacity(this.rgbWarning || this.rgb, (1 - timeUntilSpawn) * this.getOpacity());
-  ctx.beginPath();
-  ctx.arc(this.position.x, this.position.y, radius, 0, Math.PI*2);
-  ctx.stroke();
-  ctx.lineWidth = 1;
+  draw({
+    type: 'arc',
+    stroke: true,
+    arcCenter: this.position,
+    arcRadius: (this.visibleRadius || this.radius)/2 + Math.pow(timeUntilSpawn, 2) * 700,
+    lineWidth: 2 * (this.visibleRadius || this.radius)/2 * Math.pow(1-timeUntilSpawn, 3),
+    strokeStyle: rgbWithOpacity(this.rgbWarning || this.rgb, (1 - timeUntilSpawn) * this.getOpacity())
+  });
 };
 
 // Basically the diamond from Geometry Wars.
