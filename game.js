@@ -36,19 +36,12 @@ function somewhereInTheViewport() {
 function somewhereJustOutsideTheViewport(buffer) {
   var somewhere = somewhereInTheViewport();
   var edgeSeed = Math.random();
-  switch (true) {
-    case edgeSeed < 0.25:
-      somewhere.x = -buffer;
-      break;
-    case edgeSeed < 0.5:
-      somewhere.x = width + buffer;
-      break;
-    case edgeSeed < 0.75:
-      somewhere.y = -buffer;
-      break;
-    default:
-      somewhere.y = height + buffer;
-  }
+
+  if (edgeSeed < 0.25) somewhere.x = -buffer;
+  else if (edgeSeed < 0.5) somewhere.x = width + buffer;
+  else if (edgeSeed < 0.75) somewhere.y = -buffer;
+  else somewhere.y = height + buffer;
+
   return somewhere;
 }
 
@@ -189,9 +182,13 @@ function rgbWithOpacity(rgb, opacity) {
 
 /* DRAWING */
 function draw(opts) {
-  for (var key in draw.defaults) {
-    if (!(key in opts)) {
-      opts[key] = draw.defaults[key];
+  for (var defaultKey in draw.defaults) {
+    if (!(defaultKey in opts)) opts[defaultKey] = draw.defaults[defaultKey];
+  }
+
+  if (DEBUG) {
+    for (var key in opts) {
+      if (!(key in draw.defaults)) throw(key + ' is not a valid option to draw()');
     }
   }
 
@@ -202,14 +199,18 @@ function draw(opts) {
   ctx.beginPath();
 
   if (opts.type === 'arc') draw.arc(opts);
-  if (opts.type === 'line') draw.line(opts);
+  else if (opts.type === 'line') draw.line(opts);
+  else if (opts.type === 'text') draw.text(opts);
+  else if (opts.type === 'rect') draw.rect(opts);
+  else if (opts.type === 'clear') draw.clear(opts);
+  else throw(opts.type + ' is not an implemented draw type');
 
   if (opts.fill) ctx.fill();
   if (opts.stroke) ctx.stroke();
 }
 
 draw.defaults = {
-  type: null,  // 'arc' or 'line'
+  type: null,  // 'arc', 'line', 'rect' or 'text'
   fill: false,
   stroke: false,
 
@@ -221,6 +222,16 @@ draw.defaults = {
   arcRadius: 0,
   arcStart: 0,
   arcFinish: 2 * Math.PI,
+
+  text: '',
+  textPosition: undefined,  // position
+  fontFamily: 'Tulpen One',
+  fontFallback: 'sans-serif',
+  textAlign: 'center',
+  textBaseline: 'middle',
+  fontSize: 20,
+
+  rectBounds: [],
 
   lineWidth: 1,
   fillStyle: '#000',
@@ -242,6 +253,22 @@ draw.line = function(opts) {
       ctx.lineTo(position.x, position.y);
     }
   }
+};
+
+draw.rect = function(opts) {
+  ctx.fillRect.apply(ctx, opts.rectBounds);
+};
+
+draw.text = function(opts) {
+  ctx.font = opts.fontSize.toString() + 'px "' + opts.fontFamily + '", ' + opts.fontFallback;
+  ctx.textAlign = opts.textAlign;
+  ctx.textBaseline = opts.textBaseline;
+
+  ctx.fillText(opts.text, opts.textPosition.x, opts.textPosition.y);
+};
+
+draw.clear = function() {
+  ctx.clearRect(0, 0, width, height);
 };
 
 /* SETUP */
@@ -637,18 +664,12 @@ function Cable(tether, player) {
   };
 
   self.drawAreaCoveredThisStep = function() {
-    ctx.beginPath();
-    ctx.fillStyle = rgbWithOpacity([127,127,127], 0.3);
-    var areaCovered = self.areaCoveredThisStep();
-    ctx.moveTo(areaCovered[0].x, areaCovered[0].y);
-
-    for (var i = 1; i < areaCovered.length; i++) {
-      ctx.lineTo(areaCovered[i].x, areaCovered[i].y);
-    }
-
-    ctx.lineTo(areaCovered[0].x, areaCovered[0].y);
-    ctx.fill();
-    ctx.closePath();
+    draw({
+      type: 'line',
+      fill: true,
+      fillStyle: rgbWithOpacity([127,127,255], 0.3),
+      linePaths: [self.areaCoveredThisStep()]
+    });
   };
 }
 
@@ -720,11 +741,12 @@ Enemy.prototype.draw = function() {
 };
 
 Enemy.prototype.drawTargetVector = function() {
-  ctx.strokeStyle = rgbWithOpacity([127,127,127], 0.7);
-  ctx.beginPath();
-  ctx.moveTo(this.position.x, this.position.y);
-  ctx.lineTo(this.target.position.x, this.target.position.y);
-  ctx.stroke();
+  draw({
+    type: 'line',
+    stroke: true,
+    strokeStyle: rgbWithOpacity([255,127,127], 0.7),
+    linePaths: [[this.position, this.target.position]]
+  });
 };
 
 Enemy.prototype.drawWarning = function() {
@@ -1449,7 +1471,7 @@ function Game() {
 
     self.waveIndex = waveIndex || 0;
     self.waves = [
-      tutorialFor(Jumper),
+      // tutorialFor(Jumper),
       // aBunchOf(Jumper, 5, 10),
 
       tutorialFor(Drifter),
@@ -1531,7 +1553,7 @@ function Game() {
   self.step = function() {
     // When DEBUG is on, we sometimes draw stuff outside of draw();
     // so we have to clear earlier than we normally would.
-    if (DEBUG) ctx.clearRect(0, 0, width, height);
+    if (DEBUG) draw({type: 'clear'});
 
     var now = new Date().getTime();
 
@@ -1607,6 +1629,8 @@ function Game() {
   self.checkForEnemyContactWith = function(mass) {
     var massPositionDelta = lineDelta([mass.positionOnPreviousFrame, mass.position]);
 
+    var colChecks = [];  // A log of what checks we've run for debug visualisation.
+
     for (var i = 0; i < self.wave.enemies.length; i++) {
       var enemy = self.wave.enemies[i];
 
@@ -1614,14 +1638,9 @@ function Game() {
         continue;
       }
 
+      // Iterate through a bunch of places our objects would have been between
+      // this and the last frame and see if any of them collide.
       var enemyPositionDelta = lineDelta([enemy.positionOnPreviousFrame, enemy.position]);
-
-      // Iterate through a bunch of places our objects should have been in the
-      // last frame and see if any of them collide.
-      if (DEBUG) {
-        ctx.strokeStyle = 'rgba(0,0,0,0.2)';
-        ctx.beginPath();
-      }
 
       // We don't want to run unnecessary collision checks, so we decide how
       // many to run based on the velocities and radii of the objects involved.
@@ -1639,10 +1658,7 @@ function Game() {
         };
 
         if (INFO) this.collisionChecks += 1;
-        if (DEBUG) {
-          ctx.moveTo(enemyPosition.x, enemyPosition.y);
-          ctx.lineTo(massPosition.x, massPosition.y);
-        }
+        if (DEBUG) colChecks.push([enemyPosition, massPosition]);
 
         var distance = lineDelta([enemyPosition, massPosition]);
 
@@ -1668,9 +1684,14 @@ function Game() {
           return mass;
         }
       }
-
-      if (DEBUG) ctx.stroke();
     }
+
+    if (DEBUG) draw({
+      type: 'line',
+      stroke: true,
+      linePaths: colChecks,
+      strokeStyle: rgbWithOpacity([0,127,0], 0.3)
+    });
   };
 
   self.checkForEnemyContact = function() {
@@ -1690,11 +1711,13 @@ function Game() {
 
     var intensity = self.getIntensity();
 
-    ctx.font = (intensity * height * 5).toString() + 'px "Tulpen One", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = rgbWithOpacity([0,0,0], intensity);
-    ctx.fillText(self.score.toString(), width/2, height/2);
+    draw({
+      type: 'text',
+      text: self.score.toString(),
+      fontSize: (intensity * height * 5),
+      fillStyle: rgbWithOpacity([0,0,0], intensity),
+      textPosition: {x: width/2, y: height/2}
+    });
   };
 
   self.drawParticles = function() {
@@ -1712,19 +1735,16 @@ function Game() {
 
     if (opacity < 0.001) return;
 
-    // text
-    var centre;
-
-    centre = {
-      x: width/2,
-      y: height/3
-    };
-    ctx.textAlign = 'center';
-
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = rgbWithOpacity([0,0,0], opacity);
-    ctx.font = '100px "Tulpen One", sans-serif';
-    ctx.fillText('tether', centre.x + height/100, centre.y - height/100);
+    draw({
+      type: 'text',
+      text: 'tether',
+      fillStyle: rgbWithOpacity([0,0,0], opacity),
+      fontSize: 100,
+      textPosition: {
+        x: width/2,
+        y: height/3
+      }
+    });
   };
 
   self.drawRestartTutorial = function() {
@@ -1733,12 +1753,13 @@ function Game() {
     var opacity = -Math.sin((game.timeElapsed - game.ended) * 3);
     if (opacity < 0) opacity = 0;
 
-    ctx.font = (Math.min(width/5, height/8)).toString() + 'px "Tulpen One", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-
-    ctx.fillStyle = rgbWithOpacity([0,0,0], opacity);
-    ctx.fillText({touch: 'tap', mouse: 'click'}[self.tether.lastInteraction] + ' to retry', width/2, height/2);
+    draw({
+      type: 'text',
+      text: {touch: 'tap', mouse: 'click'}[self.tether.lastInteraction] + ' to retry',
+      fontSize: Math.min(width/5, height/8),
+      textPosition: {x: width/2, y: height/2},
+      fillStyle: rgbWithOpacity([0, 0, 0], opacity)
+    });
   };
 
   self.drawAchievementNotifications = function() {
@@ -1773,49 +1794,72 @@ function Game() {
       if (progress < buffer) visibility = Math.pow(progress / buffer, 1/easing);
       else if (progress > 1-buffer) visibility = Math.pow((1 - progress) / buffer, easing);
 
-      ctx.textAlign = 'right';
-      ctx.textBaseline = 'top';
-      ctx.fillStyle = rgbWithOpacity([0,0,0], visibility);
-      ctx.font = '17px "Quantico", sans-serif';
-
       var sink = -50 * (1 - visibility);  // how far off the top of the screen they should fall.
       var notificationHeight = 60;
       var baseNotificationHeight = 20 + notificationHeight * i;
 
-      ctx.fillText('Achievement Unlocked', width-25, visibility * baseNotificationHeight + sink);
-      ctx.font = 'bold 25px "Quantico", sans-serif';
-      ctx.fillText(recentAchievement.name, width-25, 19 + visibility * baseNotificationHeight + sink);
+      var drawArgs = {
+        type: 'text',
+        text: 'Achievement Unlocked',
+        textAlign: 'right',
+        textBaseline: 'top',
+        fillStyle: rgbWithOpacity([0,0,0], visibility),
+        fontFamily: 'Quantico',
+        fontSize: 17,
+        textPosition: {x: width-25, y: visibility * baseNotificationHeight + sink}
+      };
+
+      draw(drawArgs);
+
+      drawArgs.fontSize = 25;
+      drawArgs.text = recentAchievement.name;
+      drawArgs.textPosition = {x: width - 25, y: 19 + visibility * baseNotificationHeight + sink};
+
+      draw(drawArgs);
     }
   };
 
   // Extremely stupid; only really for use in
   // drawAchievementUI().
-  self.drawAchievements = function(achievementList, fromBottom, headingText) {
+  self.drawAchievements = function(achievementList, fromBottom, headingText, fillStyle) {
     if (achievementList.length === 0) return fromBottom;
+
+    var drawOpts = {
+      type: 'text',
+      fillStyle: fillStyle,
+      textAlign: 'right',
+      fontFamily: 'Quantico',
+      textBaseline: 'alphabetic'
+    };
+
     for (var i = 0; i < achievementList.length; i++) {
       var achievement = achievementList[i];
-      ctx.font = '18px "Quantico", sans-serif';
-      ctx.fillText(achievement.name, width-10, height-fromBottom-16);
 
-      ctx.font = '13px "Quantico", sans-serif';
-      ctx.fillText(achievement.description, width-10, height-fromBottom);
+      drawOpts.text = achievement.name;
+      drawOpts.fontSize = 18;
+      drawOpts.textPosition = {x: width-10, y: height - fromBottom - 16};
+      draw(drawOpts);
+
+      drawOpts.text = achievement.description;
+      drawOpts.fontSize = 13;
+      drawOpts.textPosition = {x: width-10, y: height - fromBottom};
+      draw(drawOpts);
+
       fromBottom += 45;
     }
 
-    ctx.font = 'bold 20px "Quantico", sans-serif';
-    ctx.fillText(headingText, width-10, height-fromBottom);
-    fromBottom += 55;
+    drawOpts.text = headingText;
+    drawOpts.fontSize = 20;
+    drawOpts.textPosition = {x: width-10, y: height - fromBottom};
+    draw(drawOpts);
 
+    fromBottom += 55;
     return fromBottom;
   };
 
   self.drawAchievementUI = function() {
     var unlockedAchievements = getUnlockedAchievements();
     if (unlockedAchievements.length > 0) {
-      ctx.font = '20px "Quantico", sans-serif';
-      ctx.textAlign = 'right';
-      ctx.textBaseline = 'alphabetic';
-    
       var indicatedPosition = {x: 0, y: 0};
       if (isNaN(game.tether.lastMousePosition.x)) {
         indicatedPosition = {x: 0, y: 0};
@@ -1836,20 +1880,27 @@ function Game() {
       var listingOpacity = 1 - hintOpacity;
 
       // the hint that there is something in this corner
-      ctx.fillStyle = rgbWithOpacity([0,0,0], hintOpacity/2);
-      ctx.fillText('Achievements', width-5, height-7);
+      draw({
+        type: 'text',
+        text: 'Achievements',
+        fillStyle: fillStyle = rgbWithOpacity([0,0,0], hintOpacity/2),
+        textPosition: {x: width-5, y: height-8},
+        textAlign: 'right',
+        textBaseline: 'alphabetic',
+        fontFamily: 'Quantico'
+      });
 
       // the background that makes the listing readable
-      ctx.fillStyle = rgbWithOpacity([255, 255, 255], listingOpacity * 0.9);
-      ctx.beginPath();
-      ctx.fillRect(0, 0, width, height);
+      draw({
+        type: 'rect',
+        rectBounds: [0, 0, width, height],
+        fillStyle: rgbWithOpacity([255, 255, 255], listingOpacity * 0.9)
+      });
 
       // the listing itself
       var fromBottom = 11;
-      ctx.fillStyle = rgbWithOpacity([0,0,0], listingOpacity * 0.5);
-      fromBottom = this.drawAchievements(getLockedAchievements(), fromBottom, 'Locked');
-      ctx.fillStyle = rgbWithOpacity([0,0,0], listingOpacity);
-      this.drawAchievements(unlockedAchievements, fromBottom, 'Unlocked');
+      fromBottom = this.drawAchievements(getLockedAchievements(), fromBottom, 'Locked', rgbWithOpacity([0,0,0], listingOpacity * 0.5));
+      this.drawAchievements(unlockedAchievements, fromBottom, 'Unlocked', rgbWithOpacity([0,0,0], listingOpacity));
     }
   };
 
@@ -1869,18 +1920,25 @@ function Game() {
     }
 
     for (var key in info) {
-      ctx.font = '12px monospace';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'alphabetic';
-      ctx.fillStyle = rgbWithOpacity([0,0,0], 1);
-      ctx.fillText(key + ': ' + info[key], 5, height-fromBottom);
+      draw({
+        type: 'text',
+        text: key + ': ' + info[key],
+        fontFamily: 'Monaco',
+        fontFallback: 'monospace',
+        fontSize: 12,
+        textAlign: 'left',
+        textBaseline: 'alphabetic',
+        fillStyle: rgbWithOpacity([0,0,0], 1),
+        textPosition: {x: 5, y: height-fromBottom}
+      });
+
       fromBottom += 15;
     }
 
   };
 
   self.draw = function() {
-    if (!DEBUG) ctx.clearRect(0, 0, width, height);
+    if (!DEBUG) draw({type: 'clear'});
 
     self.background.draw();
     self.drawScore();
@@ -1913,7 +1971,8 @@ function Game() {
 }
 
 var enemyPool = [Drifter, Idiot, Twitchy, Jumper];
-/* FIRE */
+
+/* MAKE IT SO */
 syncAchievements();
 
 music = new Music();
