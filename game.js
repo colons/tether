@@ -370,6 +370,8 @@ Mass.prototype = {
   lubricant: 1,
   radius: 0,
   visibleRadius: null,
+  dashInterval: 1/8,
+  extant: true,
   walls: false,
   bounciness: 0,
   rgb: [60,60,60],
@@ -456,13 +458,28 @@ Mass.prototype = {
     var radius = this.radius;
     if (this.visibleRadius !== null) radius = this.visibleRadius;
 
-    draw({
-      type: 'arc',
-      arcRadius: radius,
-      arcCenter: this.position,
-      fillStyle: this.getCurrentColor(),
-      fill: true
-    });
+    if (this.extant) {
+      draw({
+        type: 'arc',
+        arcRadius: radius,
+        arcCenter: this.position,
+        fillStyle: this.getCurrentColor(),
+        fill: true
+      });
+    } else {
+      for (var i = 0; i < 1; i += this.dashInterval) {
+        var startAngle = (game.timeElapsed/100) + (i * Math.PI*2);
+        draw({
+          type: 'arc',
+          stroke: true,
+          strokeStyle: this.getCurrentColor(),
+          arcCenter: this.position,
+          arcStart: startAngle,
+          arcFinish: startAngle + (Math.PI * this.dashInterval * 0.7),
+          arcRadius: this.radius
+        });
+      }
+    }
   },
 
   explode: function() {
@@ -680,8 +697,7 @@ function Enemy(opts) {
   this.exhausts = [];
   this.spawned = false;
 
-  this.invincible = false;  // can not die
-  this.harmless = false;  // can not kill
+  this.extant = true;  // can die and kill
 
   this.spawnAt = opts.spawnAt;
   this.wave = opts.wave;
@@ -1009,6 +1025,25 @@ Twitchy.prototype.draw = function() {
 };
 
 
+// An enemy that is scared of both parts of the player. In order to not be
+// permanently stuck against the walls, is also scared of walls.
+//
+// Spends half the time invincible, mostly as a tutorial for Jumper.
+function Hikki(opts) {
+  Enemy.call(this, opts);
+
+  // Calibrated to pretty close to the player.
+  this.mass = 100;
+  this.lubricant = 0.92;
+  this.radius = 15;
+}
+extend(Enemy, Hikki);
+
+Hikki.prototype.step = function() {
+  this.extant = Math.floor(music.measure()) % 2;
+};
+
+
 // A barely-contained enemy that teleports from point to point with a visual
 // indication that that is what is happening.
 function Jumper(opts) {
@@ -1033,8 +1068,7 @@ Jumper.prototype.step = function() {
   if (!this.died) {
     if (measure !== this.lastJumped) {
       // Teleport!
-      this.invincible = false;
-      this.harmless = false;
+      this.extant = true;
       for (var i = 0; i < 30; i++) new TeleportDust(this);
       this.setPosition(this.nextPosition);
       this.nextPosition = somewhereInTheViewport();
@@ -1042,8 +1076,7 @@ Jumper.prototype.step = function() {
     } else {
       // Don't teleport.
       this.teleportDelta = lineDelta([this.position, this.nextPosition]);
-      this.invincible = true;
-      this.harmless = true;
+      this.extant = false;
 
       // Because collision detection is fucked if you don't call setPosition every
       // step:
@@ -1054,24 +1087,9 @@ Jumper.prototype.step = function() {
 };
 
 Jumper.prototype.draw = function() {
+  Mass.prototype.draw.call(this);
+
   if (!this.died) {
-
-    var dashInterval = 1/10;
-
-    for (var i = 0; i < 1; i += dashInterval) {
-      var startAngle = (game.timeElapsed) + (i * Math.PI*2);
-
-      draw({
-        type: 'arc',
-        stroke: true,
-        strokeStyle: this.getCurrentColor(),
-        arcCenter: this.position,
-        arcStart: startAngle,
-        arcFinish: startAngle + (Math.PI * dashInterval * 0.4),
-        arcRadius: this.radius
-      });
-    }
-
     // draw the next indicator
     var fuel = music.measure() % 1;
     var extent = Math.pow(fuel, 2.5);
@@ -1471,6 +1489,8 @@ function Game() {
 
     self.waveIndex = waveIndex || 0;
     self.waves = [
+      tutorialFor(Hikki),
+
       // tutorialFor(Jumper),
       // aBunchOf(Jumper, 5, 10),
 
@@ -1600,7 +1620,7 @@ function Game() {
     for (var i = 0; i < self.wave.enemies.length; i++) {
       var enemy = self.wave.enemies[i];
 
-      if (enemy.died || !enemy.spawned || enemy.invincible) {
+      if (enemy.died || !enemy.spawned || !enemy.extant) {
         continue;
       }
 
@@ -1634,7 +1654,7 @@ function Game() {
     for (var i = 0; i < self.wave.enemies.length; i++) {
       var enemy = self.wave.enemies[i];
 
-      if (enemy.died || !enemy.spawned || enemy.harmless) {
+      if (enemy.died || !enemy.spawned || !enemy.extant) {
         continue;
       }
 
