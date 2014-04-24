@@ -1046,7 +1046,7 @@ function Hikki(opts) {
   this.radius = 15;
   this.walls = true;
   this.playerFear = 20000;
-  this.wallFear = 0.1;
+  this.wallFear = 300 / maximumPossibleDistanceBetweenTwoMasses;
   this.bounciness = 1;
 }
 extend(Enemy, Hikki);
@@ -1523,6 +1523,8 @@ function Game() {
 
     self.waveIndex = waveIndex || 0;
     self.waves = [
+      tutorialFor(Hikki),
+
       tutorialFor(Drifter),
       aBunchOf(Drifter, 2, 5),
 
