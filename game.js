@@ -154,6 +154,14 @@ function vectorAt(angle, magnitude) {
   };
 }
 
+// Return a vector with the same angle but with inverse magnitude as the vector
+// handed in.
+function inverseVector(vector) {
+  var angle = vectorAngle(vector);
+  var mag = vectorMagnitude(vector);
+  return vectorAt(angle, 1/mag);
+}
+
 function linesFromPolygon(polygon) {
   // take a list of points [a, b, c, d] and convert it to a list of lines [[a, b], [b, c], [c, d]].
   var polyLine = [];
@@ -1034,13 +1042,39 @@ function Hikki(opts) {
 
   // Calibrated to pretty close to the player.
   this.mass = 100;
-  this.lubricant = 0.92;
+  this.lubricant = 0.98;
   this.radius = 15;
+  this.walls = true;
+  this.playerFear = 20000;
+  this.wallFear = 0.1;
+  this.bounciness = 1;
 }
 extend(Enemy, Hikki);
 
 Hikki.prototype.step = function() {
   this.extant = Math.floor(music.measure()) % 2;
+
+  var force = {x: 0, y: 0};
+
+  if (this.extant && !this.died) {
+    var playerFearVector = forXAndY(
+      [inverseVector(this.getTargetVector()), {x: this.playerFear, y: this.playerFear}],
+      forXAndY.multiply
+    );
+
+    var centreOfCanvas = {x: width/2, y: height/2};
+    var wallFearVector = forXAndY(
+      [lineDelta([this.position, centreOfCanvas]), {x: this.wallFear, y: this.wallFear}],
+      forXAndY.multiply
+    );
+
+    force = forXAndY([force, playerFearVector], forXAndY.subtract);
+    force = forXAndY([force, wallFearVector], forXAndY.add);
+  }
+
+  this.force = force;
+
+  Enemy.prototype.step.call(this);
 };
 
 
@@ -1489,14 +1523,11 @@ function Game() {
 
     self.waveIndex = waveIndex || 0;
     self.waves = [
-      tutorialFor(Hikki),
-
-      // tutorialFor(Jumper),
-      // aBunchOf(Jumper, 5, 10),
-
       tutorialFor(Drifter),
-      aBunchOf(Drifter, 2, 100),
       aBunchOf(Drifter, 2, 5),
+
+      tutorialFor(Hikki),
+      aBunchOf(Hikki, 5, 10),
 
       tutorialFor(Idiot, {size: 1.5}),
       aBunchOf(Idiot, 4, 100),
