@@ -337,6 +337,7 @@ function Music() {
   element.play();
 
   this.element = element;
+  this.timeSignature = 4;
 }
 Music.prototype = {
   // XXX gonna need some callback functions here; onNextDownbeat, onNextBeat,
@@ -353,11 +354,11 @@ Music.prototype = {
   },
 
   measure: function() {
-    return music.totalBeat() / 4;
+    return this.totalBeat() / this.timeSignature;
   },
 
   beat: function() {
-      return (music.totalBeat() % 4) + 1;
+      return (music.totalBeat() % this.timeSignature);
   },
 
   timeSinceBeat: function() {
@@ -380,6 +381,7 @@ Mass.prototype = {
   visibleRadius: null,
   dashInterval: 1/8,
   extant: true,
+  becomeExtantOnBeat: null,  // so we can draw a warning
   walls: false,
   bounciness: 0,
   rgb: [60,60,60],
@@ -475,6 +477,10 @@ Mass.prototype = {
         fill: true
       });
     } else {
+      if (this.becomeExtantOnBeat !== null) {
+        this.drawExtanceWarning();
+      }
+
       for (var i = 0; i < 1; i += this.dashInterval) {
         var startAngle = (game.timeElapsed/100) + (i * Math.PI*2);
         draw({
@@ -487,6 +493,32 @@ Mass.prototype = {
           arcRadius: this.radius
         });
       }
+    }
+  },
+
+  drawExtanceWarning: function() {
+    if (this.died) {
+      return;
+    }
+    var beatsRemaining = (music.timeSignature + (this.becomeExtantOnBeat - music.beat()));
+    var timeRemaining = beatsRemaining / music.timeSignature;
+
+    for (var i = 0; i <= 1; i += this.dashInterval) {
+      // we add a big number to timeElapsed to prevent these looking less random at the start of a game
+      var baseAngle = ((game.timeElapsed + 1000)/(100*i)) + (i * Math.PI*2) + 0.2 * ((0.5 - i) * timeRemaining);
+      var targetLineWidth = (this.radius * this.dashInterval) + 2;
+      var expansion = (Math.PI * Math.pow(1 - timeRemaining, 4));
+
+      draw({
+        type: 'arc',
+        stroke: true,
+        strokeStyle: rgbWithOpacity(this.rgb, 1 - timeRemaining),
+        lineWidth: targetLineWidth * (1 - timeRemaining),
+        arcCenter: this.position,
+        arcStart: baseAngle - expansion,
+        arcFinish: baseAngle + expansion,
+        arcRadius: (this.radius * i) * (1 + Math.pow(200 * (i * timeRemaining), 1/2))
+      });
     }
   },
 
@@ -558,7 +590,7 @@ Background.prototype.step = function() {
 function Tether() {
   Mass.call(this);
   this.radius = 5;
-  
+
   this.locked = true;
   this.unlockable = true;
   this.rgb = [20,20,200];
@@ -1048,6 +1080,7 @@ function Hikki(opts) {
   this.playerFear = 20000;
   this.wallFear = 300 / maximumPossibleDistanceBetweenTwoMasses;
   this.bounciness = 0.7;
+  this.becomeExtantOnBeat = 0;
 }
 extend(Enemy, Hikki);
 
@@ -1091,6 +1124,7 @@ function Jumper(opts) {
   this.nextPosition = somewhereInTheViewport();
   this.reactsToForce = false;
   this.teleportDelta = {x: 0, y: 0};
+  this.becomeExtantOnBeat = 0;  // probably want to derive this from spawn time
 }
 extend(Enemy, Jumper);
 
@@ -1523,6 +1557,8 @@ function Game() {
 
     self.waveIndex = waveIndex || 0;
     self.waves = [
+      tutorialFor(Hikki),  // XXX
+
       tutorialFor(Drifter),
       aBunchOf(Drifter, 2, 5),
 
