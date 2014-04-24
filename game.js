@@ -714,6 +714,7 @@ function Enemy(opts) {
   this.spawned = false;
 
   this.extant = true;  // can die and kill
+  this.extanceWarningInterval = 1/5;
 
   this.spawnAt = opts.spawnAt;
   this.wave = opts.wave;
@@ -784,10 +785,10 @@ Enemy.prototype.drawExtanceWarning = function() {
   var beatsRemaining = (music.timeSignature + (this.becomeExtantOnBeat - music.beat()));
   var timeRemaining = beatsRemaining / music.timeSignature;
 
-  for (var i = 0; i <= 1; i += this.dashInterval) {
+  for (var i = 0; i <= 1; i += this.extanceWarningInterval) {
     // we add a big number to timeElapsed to prevent these looking less random at the start of a game
     var baseAngle = ((game.timeElapsed + (this.seed * 1000))/(100*i)) + (i * Math.PI*2) + 0.2 * ((0.5 - i) * timeRemaining);
-    var targetLineWidth = (this.radius * this.dashInterval) + 2;
+    var targetLineWidth = (this.radius * this.extanceWarningInterval) + 2;
     var expansion = (Math.PI * 2 * Math.pow(1 - timeRemaining, 4));
 
     draw({
