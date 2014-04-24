@@ -456,8 +456,13 @@ Mass.prototype = {
   },
 
   getOpacity: function() {
-    if (!this.died) return 1;
-    else return 1 / Math.max(1, (game.timeElapsed - this.died));
+    var opacity;
+    if (!this.died) opacity = 1;
+    else opacity = 1 / Math.max(1, (game.timeElapsed - this.died));
+
+    if (!this.extant && !this.died) opacity *= 0.1;
+
+    return opacity;
   },
 
   getCurrentColor: function() {
@@ -468,56 +473,26 @@ Mass.prototype = {
     var radius = this.radius;
     if (this.visibleRadius !== null) radius = this.visibleRadius;
 
-    if (this.extant) {
-      draw({
-        type: 'arc',
-        arcRadius: radius,
-        arcCenter: this.position,
-        fillStyle: this.getCurrentColor(),
-        fill: true
-      });
-    } else {
-      if (this.becomeExtantOnBeat !== null) {
-        this.drawExtanceWarning();
-      }
-
-      for (var i = 0; i < 1; i += this.dashInterval) {
-        var startAngle = (game.timeElapsed/100) + (i * Math.PI*2);
-        draw({
-          type: 'arc',
-          stroke: true,
-          strokeStyle: this.getCurrentColor(),
-          arcCenter: this.position,
-          arcStart: startAngle,
-          arcFinish: startAngle + (Math.PI * this.dashInterval * 0.7),
-          arcRadius: this.radius
-        });
-      }
-    }
+    draw({
+      type: 'arc',
+      arcRadius: radius,
+      arcCenter: this.position,
+      fillStyle: this.getCurrentColor(),
+      fill: true
+    });
   },
 
-  drawExtanceWarning: function() {
-    if (this.died) {
-      return;
-    }
-    var beatsRemaining = (music.timeSignature + (this.becomeExtantOnBeat - music.beat()));
-    var timeRemaining = beatsRemaining / music.timeSignature;
-
-    for (var i = 0; i <= 1; i += this.dashInterval) {
-      // we add a big number to timeElapsed to prevent these looking less random at the start of a game
-      var baseAngle = ((game.timeElapsed + 1000)/(100*i)) + (i * Math.PI*2) + 0.2 * ((0.5 - i) * timeRemaining);
-      var targetLineWidth = (this.radius * this.dashInterval) + 2;
-      var expansion = (Math.PI * 2 * Math.pow(1 - timeRemaining, 4));
-
+  drawDottedOutline: function() {
+    for (var i = 0; i < 1; i += this.dashInterval) {
+      var startAngle = (game.timeElapsed/100) + (i * Math.PI*2);
       draw({
         type: 'arc',
         stroke: true,
-        strokeStyle: rgbWithOpacity(this.rgb, 1 - timeRemaining),
-        lineWidth: targetLineWidth * (1 - timeRemaining),
+        strokeStyle: this.getCurrentColor(),
         arcCenter: this.position,
-        arcStart: baseAngle - expansion,
-        arcFinish: baseAngle + expansion,
-        arcRadius: (this.radius * i) * (1 + Math.pow(200 * (i * timeRemaining), 1/2))
+        arcStart: startAngle,
+        arcFinish: startAngle + (Math.PI * this.dashInterval * 0.7),
+        arcRadius: this.radius
       });
     }
   },
@@ -793,7 +768,39 @@ Enemy.prototype.die = function(playerDeservesAchievement) {
 
 Enemy.prototype.draw = function() {
   if (DEBUG && !this.died) this.drawTargetVector();
+
+  if ((!this.extant) && this.becomeExtantOnBeat !== null) {
+    this.drawExtanceWarning();
+  }
+
   Mass.prototype.draw.call(this);
+};
+
+
+Enemy.prototype.drawExtanceWarning = function() {
+  if (this.died) {
+    return;
+  }
+  var beatsRemaining = (music.timeSignature + (this.becomeExtantOnBeat - music.beat()));
+  var timeRemaining = beatsRemaining / music.timeSignature;
+
+  for (var i = 0; i <= 1; i += this.dashInterval) {
+    // we add a big number to timeElapsed to prevent these looking less random at the start of a game
+    var baseAngle = ((game.timeElapsed + 1000)/(100*i)) + (i * Math.PI*2) + 0.2 * ((0.5 - i) * timeRemaining);
+    var targetLineWidth = (this.radius * this.dashInterval) + 2;
+    var expansion = (Math.PI * 2 * Math.pow(1 - timeRemaining, 4));
+
+    draw({
+      type: 'arc',
+      stroke: true,
+      strokeStyle: rgbWithOpacity(this.rgb, 1 - timeRemaining),
+      lineWidth: targetLineWidth * (1 - timeRemaining),
+      arcCenter: this.position,
+      arcStart: baseAngle - expansion,
+      arcFinish: baseAngle + expansion,
+      arcRadius: (this.radius * i) * (1 + Math.pow(200 * (i * timeRemaining), 1/2))
+    });
+  }
 };
 
 Enemy.prototype.drawTargetVector = function() {
@@ -1085,7 +1092,7 @@ function Hikki(opts) {
 extend(Enemy, Hikki);
 
 Hikki.prototype.step = function() {
-  this.extant = !(Math.floor(music.measure()) % 2);
+  this.extant = Math.floor(music.measure() + 1) % 2;
 
   var force = {x: 0, y: 0};
 
