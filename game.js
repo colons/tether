@@ -1047,7 +1047,7 @@ function Hikki(opts) {
   this.walls = true;
   this.playerFear = 20000;
   this.wallFear = 300 / maximumPossibleDistanceBetweenTwoMasses;
-  this.bounciness = 1;
+  this.bounciness = 0.7;
 }
 extend(Enemy, Hikki);
 
