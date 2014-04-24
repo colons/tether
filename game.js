@@ -369,7 +369,9 @@ Music.prototype = {
 
 /* GAME OBJECTS */
 // The basic object of our physics engine. A circle with mass, position, velocity and forces.
-function Mass() {}
+function Mass() {
+  this.seed = Math.random();
+}
 Mass.prototype = {
   position: {x: 0, y: 0},
   positionOnPreviousFrame: {x: 0, y: 0},
@@ -390,7 +392,6 @@ Mass.prototype = {
   journeySincePreviousFrame: function() {
     return [this.positionOnPreviousFrame, this.position];
   },
-
 
   bounceInDimension: function(d, max) {
     var distanceFromFarEdge = max - this.radius - this.position[d];
@@ -776,7 +777,6 @@ Enemy.prototype.draw = function() {
   Mass.prototype.draw.call(this);
 };
 
-
 Enemy.prototype.drawExtanceWarning = function() {
   if (this.died) {
     return;
@@ -786,7 +786,7 @@ Enemy.prototype.drawExtanceWarning = function() {
 
   for (var i = 0; i <= 1; i += this.dashInterval) {
     // we add a big number to timeElapsed to prevent these looking less random at the start of a game
-    var baseAngle = ((game.timeElapsed + 1000)/(100*i)) + (i * Math.PI*2) + 0.2 * ((0.5 - i) * timeRemaining);
+    var baseAngle = ((game.timeElapsed + (this.seed * 1000))/(100*i)) + (i * Math.PI*2) + 0.2 * ((0.5 - i) * timeRemaining);
     var targetLineWidth = (this.radius * this.dashInterval) + 2;
     var expansion = (Math.PI * 2 * Math.pow(1 - timeRemaining, 4));
 
