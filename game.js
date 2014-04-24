@@ -1085,7 +1085,7 @@ function Hikki(opts) {
 extend(Enemy, Hikki);
 
 Hikki.prototype.step = function() {
-  this.extant = Math.floor(music.measure()) % 2;
+  this.extant = !(Math.floor(music.measure()) % 2);
 
   var force = {x: 0, y: 0};
 
