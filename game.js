@@ -507,7 +507,7 @@ Mass.prototype = {
       // we add a big number to timeElapsed to prevent these looking less random at the start of a game
       var baseAngle = ((game.timeElapsed + 1000)/(100*i)) + (i * Math.PI*2) + 0.2 * ((0.5 - i) * timeRemaining);
       var targetLineWidth = (this.radius * this.dashInterval) + 2;
-      var expansion = (Math.PI * Math.pow(1 - timeRemaining, 4));
+      var expansion = (Math.PI * 2 * Math.pow(1 - timeRemaining, 4));
 
       draw({
         type: 'arc',
