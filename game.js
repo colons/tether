@@ -1089,6 +1089,7 @@ function Hikki(opts) {
   this.wallFear = 300 / maximumPossibleDistanceBetweenTwoMasses;
   this.bounciness = 0.7;
   this.becomeExtantOnBeat = 0;
+  this.maximumPlayerFear = 150;
 }
 extend(Enemy, Hikki);
 
@@ -1102,6 +1103,12 @@ Hikki.prototype.step = function() {
       [inverseVector(this.getTargetVector()), {x: this.playerFear, y: this.playerFear}],
       forXAndY.multiply
     );
+
+    if (vectorMagnitude(playerFearVector) > this.maximumPlayerFear) {
+      // Prevent too much force being exerted because it just gets silly (and a
+      // little confusing) at a certain point.
+      playerFearVector = vectorAt(vectorAngle(playerFearVector), this.maximumPlayerFear);
+    }
 
     var centreOfCanvas = {x: width/2, y: height/2};
     var wallFearVector = forXAndY(
