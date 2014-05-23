@@ -1139,7 +1139,7 @@ function Jumper(opts) {
   this.nextPosition = somewhereInTheViewport();
   this.reactsToForce = false;
   this.teleportDelta = {x: 0, y: 0};
-  this.becomeExtantOnBeat = 0;  // probably want to derive this from spawn time
+  this.becomeExtantOnBeat = 0;  // XXX derive this from spawn time
 }
 extend(Enemy, Jumper);
 
