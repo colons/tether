@@ -340,11 +340,6 @@ function Music() {
   this.timeSignature = 4;
 }
 Music.prototype = {
-  // XXX gonna need some callback functions here; onNextDownbeat, onNextBeat,
-  // etc., as well as timeOfNextBeat and such.
-
-  // XXX Also gonna need to slow the music down when the game slows down.
-
   bpm: 90,
   url: 'bgm.mp3',
   delayCompensation: 0.03,
