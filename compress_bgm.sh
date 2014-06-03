@@ -1,11 +1,11 @@
 #!/usr/bin/env bash -e
 
-rm bgm.mp3 || :
+rm "$1".mp3 || :
 
-cp bgm.aif bgm_copy1.aif 
-cp bgm.aif bgm_copy2.aif 
+cp "$1".aif "$1"_copy1.aif 
+cp "$1".aif "$1"_copy2.aif 
 
-lame -V 0 --nogap bgm_copy1.aif bgm.aif bgm_copy2.aif
-mv bgm.aif.mp3 bgm.mp3
+lame -V 0 --nogap "$1"_copy1.aif "$1".aif "$1"_copy2.aif
+mv "$1".aif.mp3 "$1".mp3
 
-rm bgm_copy*
+rm "$1"_copy*
