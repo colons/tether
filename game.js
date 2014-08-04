@@ -1068,137 +1068,6 @@ Twitchy.prototype.draw = function() {
 };
 
 
-// An enemy that is scared of both parts of the player. In order to not be
-// permanently stuck against the walls, is also scared of walls.
-//
-// Spends half the time invincible, mostly as a tutorial for Jumper.
-function Hikki(opts) {
-  Enemy.call(this, opts);
-
-  // Calibrated to pretty close to the player.
-  this.mass = 100;
-  this.lubricant = 0.98;
-  this.radius = 15;
-  this.walls = true;
-  this.playerFear = 20000;
-  this.wallFear = 300 / maximumPossibleDistanceBetweenTwoMasses;
-  this.bounciness = 0.7;
-  this.becomeExtantOnBeat = 0;
-  this.maximumPlayerFear = 150;
-}
-extend(Enemy, Hikki);
-
-Hikki.prototype.step = function() {
-  this.extant = Math.floor(music.measure() + 1) % 2;
-
-  var force = {x: 0, y: 0};
-
-  if (this.extant && !this.died) {
-    var playerFearVector = forXAndY(
-      [inverseVector(this.getTargetVector()), {x: this.playerFear, y: this.playerFear}],
-      forXAndY.multiply
-    );
-
-    if (vectorMagnitude(playerFearVector) > this.maximumPlayerFear) {
-      // Prevent too much force being exerted because it just gets silly (and a
-      // little confusing) at a certain point.
-      playerFearVector = vectorAt(vectorAngle(playerFearVector), this.maximumPlayerFear);
-    }
-
-    var centreOfCanvas = {x: width/2, y: height/2};
-    var wallFearVector = forXAndY(
-      [lineDelta([this.position, centreOfCanvas]), {x: this.wallFear, y: this.wallFear}],
-      forXAndY.multiply
-    );
-
-    force = forXAndY([force, playerFearVector], forXAndY.subtract);
-    force = forXAndY([force, wallFearVector], forXAndY.add);
-  }
-
-  this.force = force;
-
-  Enemy.prototype.step.call(this);
-};
-
-
-// A barely-contained enemy that teleports from point to point with a visual
-// indication that that is what is happening.
-function Jumper(opts) {
-  Enemy.call(this, opts);
-
-  // Since no force is ever exerted, we don't need to worry about mass or
-  // lubricant.
-  this.radius = 10;
-  this.lastJumped = null;
-  this.chargeRate = 0.01;
-  this.nextPosition = somewhereInTheViewport();
-  this.reactsToForce = false;
-  this.teleportDelta = {x: 0, y: 0};
-  this.becomeExtantOnBeat = 0;  // XXX derive this from spawn time
-}
-extend(Enemy, Jumper);
-
-Jumper.prototype.step = function() {
-  var measure = Math.floor(music.measure());
-
-  if (this.lastJumped === null) this.lastJumped = measure;
-
-  if (!this.died) {
-    if (measure !== this.lastJumped) {
-      // Teleport!
-      this.extant = true;
-      for (var i = 0; i < 30; i++) new TeleportDust(this);
-      this.setPosition(this.nextPosition);
-      this.nextPosition = somewhereInTheViewport();
-      this.lastJumped = measure;
-    } else {
-      // Don't teleport.
-      this.teleportDelta = lineDelta([this.position, this.nextPosition]);
-      this.extant = false;
-
-      // Because collision detection is fucked if you don't call setPosition every
-      // step:
-      this.setPosition(this.position);
-    }
-  }
-  Enemy.prototype.step.call(this);
-};
-
-Jumper.prototype.draw = function() {
-  Mass.prototype.draw.call(this);
-
-  if (!this.died) {
-    // draw the next indicator
-    var fuel = music.measure() % 1;
-    var extent = Math.pow(fuel, 2.5);
-    var currentDrawnDelta = forXAndY([this.teleportDelta, {x: extent, y: extent}], forXAndY.multiply);
-
-    // start drawing the line at the edge of the circle
-    var edgeVector = vectorAt(vectorAngle(this.teleportDelta), this.radius);
-    var edgePosition = forXAndY([this.position, edgeVector], forXAndY.add);
-
-    var lineStart = forXAndY([edgePosition, currentDrawnDelta], forXAndY.add);
-    var timeSinceTick = (fuel * 4) % 1;
-    var tick = (fuel * 4) - timeSinceTick;
-
-    draw({
-      type: 'line',
-      stroke: true,
-      lineWidth: tick/timeSinceTick,
-      strokeStyle: rgbWithOpacity(this.rgb, timeSinceTick),
-      linePaths: [[lineStart, edgePosition]]
-    });
-  }
-};
-
-Jumper.prototype.die = function() {
-  // Derive a velocity from our previous teleport and become a mass upon which
-  // forces are exerted
-  this.reactsToForce = true;
-  this.velocity = forXAndY([this.teleportDelta, {x: 0.1, y: 0.1}], forXAndY.multiply);
-  Enemy.prototype.die.apply(this, arguments);
-};
-
 /* EFFECTS */
 function Particle() {
   Mass.call(this);
@@ -1567,13 +1436,8 @@ function Game() {
 
     self.waveIndex = waveIndex || 0;
     self.waves = [
-      tutorialFor(Hikki),  // XXX
-
       tutorialFor(Drifter),
       aBunchOf(Drifter, 2, 5),
-
-      tutorialFor(Hikki),
-      aBunchOf(Hikki, 5, 10),
 
       tutorialFor(Idiot, {size: 1.5}),
       aBunchOf(Idiot, 4, 100),
@@ -2067,7 +1931,7 @@ function Game() {
   self.reset(0);
 }
 
-var enemyPool = [Drifter, Idiot, Twitchy, Jumper];
+var enemyPool = [Drifter, Idiot, Twitchy];
 
 /* MAKE IT SO */
 syncAchievements();
