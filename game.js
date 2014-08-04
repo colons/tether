@@ -1359,7 +1359,7 @@ var achievements = {
   },
   omnicide: {
     name: 'Omnicide',
-    description: 'Kill every type of enemy without dying'
+    description: 'Kill every type of enemy in one game'
   },
   panic: {
     name: 'Panic',
