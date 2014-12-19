@@ -615,7 +615,7 @@ Tether.prototype.setPosition = function(position) {
 Tether.prototype.step = function() {
   var leniency;
   if (this.lastInteraction === 'touch') leniency = 50;
-  else leniency = 20;
+  else leniency = 30;
 
   if (this.unlockable && (vectorMagnitude(forXAndY([this.position, this.lastMousePosition], forXAndY.subtract)) < leniency)) {
     this.locked = false;
