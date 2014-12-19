@@ -9,6 +9,7 @@ var DEBUG = (window.location.hash === '#DEBUG'),
     devicePixelRatio = window.devicePixelRatio || 1,
     width,
     height,
+    muteButtonPosition,
     maximumPossibleDistanceBetweenTwoMasses,
     cookieSuffix = '; max-age=' + (60*60*24*365).toString(),
     highScore = 0,
@@ -294,6 +295,7 @@ function scaleCanvas(ratio) {
 function initCanvas() {
   width = window.innerWidth;
   height = window.innerHeight;
+  muteButtonPosition = {x: width/2, y: height-30};
 
   maximumPossibleDistanceBetweenTwoMasses = vectorMagnitude({x: width, y: height});
 
@@ -305,6 +307,7 @@ function initCanvas() {
 
   scaleCanvas(devicePixelRatio);
 }
+
 
 function edgesOfCanvas() {
   return linesFromPolygon([
@@ -530,20 +533,30 @@ Mass.prototype = {
 // Aesthetic garbage
 function BackgroundPart(i) {
   Mass.call(this);
+  this.i = i;
   this.baseRadius = 2 * Math.max(width, height) / i;
   this.radius = 1;
   this.bounciness = 1;
   this.velocity = vectorAt(Math.PI * 2 * Math.random(), i * Math.random());
   this.teleportTo(somewhereInTheViewport());
   this.walls = true;
-  this.color = rgbWithOpacity([127,127,127], 0.005 * i);
 }
 extend(Mass, BackgroundPart);
 BackgroundPart.prototype.getCurrentColor = function() {
   return this.color;
 };
 BackgroundPart.prototype.step = function() {
-  this.visibleRadius = 1/music.timeSinceBeat() * 20 + this.baseRadius;
+  this.color = rgbWithOpacity([127,127,127], 0.005 * this.i);
+
+  if (game.clickShouldMute) {
+    this.color = rgbWithOpacity([255,255,255], 0.05 * this.i);
+    this.visibleRadius = this.baseRadius + (Math.random() * this.baseRadius);
+  } else if (!music.element.paused) {
+    this.visibleRadius = 1/music.timeSinceBeat() * 20 + this.baseRadius;
+  } else {
+    this.visibleRadius = this.baseRadius;
+  }
+
   Mass.prototype.step.call(this);
 };
 
@@ -554,6 +567,14 @@ function Background() {
   }
 }
 Background.prototype.draw = function() {
+  if (game.clickShouldMute) {
+    draw({
+      type: 'rect',
+      rectBounds: [0, 0, width, height],
+      fillStyle: rgbWithOpacity([0, 0, 0], 1)
+    });
+  }
+
   for (var i = 0; i < this.parts.length; this.parts[i++].draw());
 };
 Background.prototype.step = function() {
@@ -1561,6 +1582,8 @@ function Game() {
       self.lastStepped = now;
     }
 
+    self.proximityToMuteButton = vectorMagnitude(forXAndY([muteButtonPosition, self.tether.lastMousePosition], forXAndY.subtract));
+    self.clickShouldMute = (!self.started && self.proximityToMuteButton < 30);
     self.background.step();
 
     self.tether.step();
@@ -1906,6 +1929,27 @@ function Game() {
     }
   };
 
+  self.drawMuteButton = function() {
+    if (!self.clickShouldMute) {
+      xNoise = (Math.random() - 0.5) * (500/self.proximityToMuteButton);
+      yNoise = (Math.random() - 0.5) * (500/self.proximityToMuteButton);
+      visiblePosition = {x: xNoise + muteButtonPosition.x, y: yNoise + muteButtonPosition.y};
+    } else {
+      visiblePosition = muteButtonPosition;
+    }
+
+    draw({
+      type: 'text',
+      text: music.element.paused ? '\uf025' : '\uf026',
+      fontFamily: 'FontAwesome',
+      fontSize: 30,
+      textAlign: 'center',
+      textBaseline: 'middle',
+      fillStyle: rgbWithOpacity([0,0,0], 1),
+      textPosition: visiblePosition
+    });
+  };
+
   self.drawInfo = function() {
     var fromBottom = 7;
     var info = {
@@ -1936,7 +1980,6 @@ function Game() {
 
       fromBottom += 15;
     }
-
   };
 
   self.draw = function() {
@@ -1957,6 +2000,7 @@ function Game() {
     self.drawAchievementNotifications();
 
     if (!self.started || self.ended) self.drawHighScore();
+    if (!self.started) self.drawMuteButton();
 
     // we shouldn't draw the achievement UI on touch screens until the player
     // has explicitly requested a return to the title screen it's horribly
