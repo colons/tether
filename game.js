@@ -1457,7 +1457,6 @@ function Game() {
   };
 
   self.setSpeed = function(speed) {
-    music.element.playbackRate = speed/self.normalSpeed;
     self.speed = speed;
   };
 
