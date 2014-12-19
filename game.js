@@ -9,6 +9,9 @@ var devicePixelRatio = window.devicePixelRatio || 1;
 var width;
 var height;
 var maximumPossibleDistanceBetweenTwoMasses;
+var cookieSuffix = '; max-age=' + (60*60*24*365).toString();
+var highScore = 0;
+var highScoreCookieKey = 'tetherHighScore';
 
 
 /* UTILITIES */
@@ -1373,25 +1376,39 @@ var achievements = {
   }
 };
 
+function saveCookie(key, value) {
+  document.cookie = key + '=' + value + cookieSuffix;
+}
+
 function unlockAchievement(slug) {
   var achievement = achievements[slug];
   if (!achievement.unlocked) {
     achievement.unlocked = new Date();
-    document.cookie = slug + '=' + achievement.unlocked.getTime().toString() + '; max-age=' + (60*60*24*365).toString();
+    saveCookie(slug, achievement.unlocked.getTime().toString());
   }
 }
 
-// Load unlocked achievements from the cookie.
-function syncAchievements(slug) {
+function logScore(score) {
+  if (score > highScore) {
+    highScore = score;
+    saveCookie(highScoreCookieKey, score.toString());
+  }
+}
+
+// Load high score and unlocked achievements from the cookie.
+function syncSave(slug) {
   var cookieStrings = document.cookie.split(';');
   for (var i = 0; i < cookieStrings.length; i++) {
     var cs = cookieStrings[i];
     var split = cs.replace(/ /, '').split('=');
     var key = split[0];
+    var value = split[1];
 
     if (key in achievements) {
-      var value = split[1];
       achievements[key].unlocked = new Date(parseInt(value, 10));
+    } else if (key === highScoreCookieKey) {
+      highScore = parseInt(value, 10);
+      console.log(highScore);
     }
   }
 }
@@ -1862,6 +1879,19 @@ function Game() {
     }
   };
 
+  self.drawHighScore = function() {
+    draw({
+      type: 'text',
+      text: 'High score: ' + highScore.toString(),
+      fillStyle: fillStyle = rgbWithOpacity([0,0,0], 1),
+      fontSize: 15,
+      textPosition: {x: 6, y: height-3},
+      textAlign: 'left',
+      textBaseline: 'bottom',
+      fontFamily: 'Quantico'
+    });
+  };
+
   self.drawInfo = function() {
     var fromBottom = 7;
     var info = {
@@ -1911,13 +1941,17 @@ function Game() {
     self.drawRestartTutorial();
 
     self.drawAchievementNotifications();
-    if (!self.started || self.ended) self.drawAchievementUI();
+    if (!self.started || self.ended) {
+      self.drawHighScore();
+      self.drawAchievementUI();
+    }
 
     if (INFO) self.drawInfo();
   };
 
   self.end = function() {
     canvas.classList.remove('hidecursor');
+    logScore(self.score);
     self.ended = self.timeElapsed;
     self.tether.locked = true;
     self.tether.unlockable = false;
@@ -1930,7 +1964,7 @@ function Game() {
 var enemyPool = [Drifter, Idiot, Twitchy];
 
 /* MAKE IT SO */
-syncAchievements();
+syncSave();
 
 music = new Music();
 game = new Game();
