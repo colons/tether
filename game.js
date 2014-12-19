@@ -1885,7 +1885,7 @@ function Game() {
       text: 'High score: ' + highScore.toString(),
       fillStyle: fillStyle = rgbWithOpacity([0,0,0], 1),
       fontSize: 15,
-      textPosition: {x: 6, y: height-3},
+      textPosition: {x: 6, y: height-1},
       textAlign: 'left',
       textBaseline: 'bottom',
       fontFamily: 'Quantico'
