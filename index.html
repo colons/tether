@@ -6,8 +6,7 @@
 
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <link href='https://fonts.googleapis.com/css?family=Tulpen+One' rel='stylesheet' type='text/css'/>
-    <link href='https://fonts.googleapis.com/css?family=Quantico:400,700' rel='stylesheet' type='text/css'>
+    <link href="https://fonts.googleapis.com/css?family=Tulpen+One%7CQuantico:400,700" rel="stylesheet" type="text/css"/>
     <style>
       * {
         margin: 0;
@@ -16,30 +15,38 @@
       }
 
       body {
-        background-color: #333;
-        font-family: sans-serif;
-        color: #ddd;
+        background-color: #fff;
+        font-family: "Quantico", sans-serif;
+        color: #000;
+      }
+
+      body.js {
         overflow: hidden;
       }
 
+      h1 {
+        padding-top: 10vh;
+        padding-bottom: .7em;
+        font-size: 7em;
+        text-align: center;
+        font-weight: normal;
+        font-family: "Tulpen One", sans-serif;
+      }
+
       p {
-        font-size: 2em;
+        font-size: 1.6em;
         max-width: 20em;
         margin: 0 auto;
         padding: 0 1em .5em;
       }
 
-      p:first-child {
-        padding-top: 20vh;
-      }
-
       a {
-        color: #e88;
+        color: #d66;
         text-decoration: none;
       }
 
       a:hover {
-        color: #fff;
+        color: #444;
       }
 
       canvas {
@@ -54,6 +61,7 @@
   </head>
   <body>
     <noscript>
+      <h1>tether</h1>
       <p>Tether requires javascript.</p>
       <p>I know it's uncouth to encourage you to make an exception just for me, but you're welcome to inspect <a href="game.js">the script</a> before you run it if it'd make you more comfortable.</p>
     </noscript>

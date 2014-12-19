@@ -1,6 +1,8 @@
 var DEBUG = (window.location.hash === '#DEBUG');
 var INFO = (DEBUG || window.location.hash === '#INFO');
 
+document.body.classList.add('js');
+
 var game;
 var music;
 var canvas;
