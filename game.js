@@ -1953,10 +1953,17 @@ function Game() {
     self.drawRestartTutorial();
 
     self.drawAchievementNotifications();
-    if (!self.started || self.ended) {
-      self.drawHighScore();
-      self.drawAchievementUI();
-    }
+
+    if (!self.started || self.ended) self.drawHighScore();
+
+    // we shouldn't draw the achievement UI on touch screens until the player
+    // has explicitly requested a return to the title screen it's horribly
+    // confusing if it just pops up and it's *incredibly likely* given that
+    // touch screens are generally smaller:
+    if (
+      (self.tether.lastInteraction === 'mouse' && self.ended) ||
+      !self.started
+    ) self.drawAchievementUI();
 
     if (INFO) self.drawInfo();
   };
