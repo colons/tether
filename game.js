@@ -548,7 +548,7 @@ BackgroundPart.prototype.getCurrentColor = function() {
 BackgroundPart.prototype.step = function() {
   this.color = rgbWithOpacity([127,127,127], 0.005 * this.i);
 
-  if (game.clickShouldMute) {
+  if (game.clickShouldMute && music.element.paused) {
     this.color = rgbWithOpacity([255,255,255], 0.05 * this.i);
     this.visibleRadius = this.baseRadius + (Math.random() * this.baseRadius);
   } else if (!music.element.paused) {
@@ -567,7 +567,7 @@ function Background() {
   }
 }
 Background.prototype.draw = function() {
-  if (game.clickShouldMute) {
+  if (game.clickShouldMute && music.element.paused) {
     draw({
       type: 'rect',
       rectBounds: [0, 0, width, height],
@@ -1930,13 +1930,17 @@ function Game() {
   };
 
   self.drawMuteButton = function() {
-    if (!self.clickShouldMute) {
+    if (!self.clickShouldMute && music.element.paused) {
       xNoise = (Math.random() - 0.5) * (500/self.proximityToMuteButton);
       yNoise = (Math.random() - 0.5) * (500/self.proximityToMuteButton);
       visiblePosition = {x: xNoise + muteButtonPosition.x, y: yNoise + muteButtonPosition.y};
     } else {
       visiblePosition = muteButtonPosition;
     }
+
+    var opacity = 1;
+
+    if (self.clickShouldMute && !music.element.paused) opacity = 0.5;
 
     draw({
       type: 'text',
@@ -1945,7 +1949,7 @@ function Game() {
       fontSize: 30,
       textAlign: 'center',
       textBaseline: 'middle',
-      fillStyle: rgbWithOpacity([0,0,0], 1),
+      fillStyle: rgbWithOpacity([0,0,0], opacity),
       textPosition: visiblePosition
     });
   };
@@ -2035,7 +2039,13 @@ music = new Music();
 game = new Game();
 
 function restartGameIfEnded(e) {
-  if (game.ended) {
+  if (game.clickShouldMute) {
+    if (music.element.paused) {
+      music.element.play();
+    } else {
+      music.element.pause();
+    }
+  } else if (game.ended) {
     game.reset(0);
   }
 }
