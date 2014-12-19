@@ -1868,7 +1868,8 @@ function Game() {
       draw({
         type: 'text',
         text: 'Achievements…',
-        fillStyle: fillStyle = rgbWithOpacity([0,0,0], hintOpacity/2),
+        fillStyle: fillStyle = rgbWithOpacity([0,0,0], hintOpacity),
+        fontSize: 16,
         textPosition: {x: width-5, y: height-8},
         textAlign: 'right',
         textBaseline: 'alphabetic',
@@ -1896,7 +1897,7 @@ function Game() {
         type: 'text',
         text: 'Best: ' + highScore.toString(),
         fillStyle: fillStyle = rgbWithOpacity([0,0,0], 1),
-        fontSize: 15,
+        fontSize: 16,
         textPosition: {x: 6, y: height-1},
         textAlign: 'left',
         textBaseline: 'bottom',
