@@ -329,22 +329,18 @@ function Music() {
   if (INFO) path = 'test.mp3';
   else path = 'bgm.mp3';
 
-  var element = new Audio(path);
+  self.element = new Audio(path);
 
-  self.play = function() {
-    if (typeof element.loop === 'boolean') {
-      if (INFO) console.log('using element.loop for looping');
-      element.loop = true;
-    } else {
-      if (INFO) console.log('using event listener for looping');
-      element.addEventListener('ended', function() {
-        element.currentTime = 0;
-        element.play();
-      });
-    }
-  };
+  if (typeof self.element.loop === 'boolean') {
+    if (INFO) console.log('using element.loop for looping');
+    self.element.loop = true;
+  } else {
+    if (INFO) console.log('using event listener for looping');
+    self.element.addEventListener('ended', function() {
+      self.element.currentTime = 0;
+    });
+  }
 
-  self.element = element;
   self.timeSignature = 4;
 }
 Music.prototype = {
