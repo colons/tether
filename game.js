@@ -320,28 +320,29 @@ initCanvas();
 
 
 function Music() {
-  var path;
+  var self = this,
+      path;
 
   if (INFO) path = 'test.mp3';
   else path = 'bgm.mp3';
 
   var element = new Audio(path);
 
-  if (typeof element.loop === 'boolean') {
-    if (INFO) console.log('using element.loop for looping');
-    element.loop = true;
-  } else {
-    if (INFO) console.log('using event listener for looping');
-    element.addEventListener('ended', function() {
-      element.currentTime = 0;
-      element.play();
-    });
-  }
+  self.play = function() {
+    if (typeof element.loop === 'boolean') {
+      if (INFO) console.log('using element.loop for looping');
+      element.loop = true;
+    } else {
+      if (INFO) console.log('using event listener for looping');
+      element.addEventListener('ended', function() {
+        element.currentTime = 0;
+        element.play();
+      });
+    }
+  };
 
-  element.play();
-
-  this.element = element;
-  this.timeSignature = 4;
+  self.element = element;
+  self.timeSignature = 4;
 }
 Music.prototype = {
   bpm: 90,
@@ -1893,7 +1894,7 @@ function Game() {
     if (highScore) {
       draw({
         type: 'text',
-        text: 'High score: ' + highScore.toString(),
+        text: 'Best: ' + highScore.toString(),
         fillStyle: fillStyle = rgbWithOpacity([0,0,0], 1),
         fontSize: 15,
         textPosition: {x: 6, y: height-1},
