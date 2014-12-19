@@ -10,4 +10,4 @@ mv "$1".aif.mp3 "$1".mp3
 
 rm "$1"_copy*
 
-id3tool bgm.mp3 -t 'Click to Retry' -a 'Tether' -r 'Nivi' -y '2014'
+id3tool "$1".mp3 -t 'Click to Retry' -a 'Tether' -r 'Nivi' -y '2014'
