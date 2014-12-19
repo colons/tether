@@ -1874,7 +1874,8 @@ function Game() {
       });
 
       // the listing itself
-      var fromBottom = 11;
+      var heightNeeded = 500;
+      var fromBottom = (((game.tether.lastMousePosition.y - height ) / height) * heightNeeded) + 20;
       fromBottom = this.drawAchievements(getLockedAchievements(), fromBottom, 'Locked', rgbWithOpacity([0,0,0], listingOpacity * 0.5));
       this.drawAchievements(unlockedAchievements, fromBottom, 'Unlocked', rgbWithOpacity([0,0,0], listingOpacity));
     }
