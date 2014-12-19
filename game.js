@@ -1857,7 +1857,7 @@ function Game() {
       // the hint that there is something in this corner
       draw({
         type: 'text',
-        text: 'Achievements',
+        text: 'Achievements…',
         fillStyle: fillStyle = rgbWithOpacity([0,0,0], hintOpacity/2),
         textPosition: {x: width-5, y: height-8},
         textAlign: 'right',
