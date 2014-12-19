@@ -1,19 +1,18 @@
-var DEBUG = (window.location.hash === '#DEBUG');
-var INFO = (DEBUG || window.location.hash === '#INFO');
-
 document.body.classList.add('js');
 
-var game;
-var music;
-var canvas;
-var ctx;
-var devicePixelRatio = window.devicePixelRatio || 1;
-var width;
-var height;
-var maximumPossibleDistanceBetweenTwoMasses;
-var cookieSuffix = '; max-age=' + (60*60*24*365).toString();
-var highScore = 0;
-var highScoreCookieKey = 'tetherHighScore';
+var DEBUG = (window.location.hash === '#DEBUG'),
+    INFO = (DEBUG || window.location.hash === '#INFO'),
+    game,
+    music,
+    canvas,
+    ctx,
+    devicePixelRatio = window.devicePixelRatio || 1,
+    width,
+    height,
+    maximumPossibleDistanceBetweenTwoMasses,
+    cookieSuffix = '; max-age=' + (60*60*24*365).toString(),
+    highScore = 0,
+    highScoreCookieKey = 'tetherHighScore';
 
 
 /* UTILITIES */
