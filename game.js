@@ -763,6 +763,12 @@ Enemy.prototype.die = function(playerDeservesAchievement) {
   }
   this.explode();
   this.died = game.timeElapsed;
+  if (game.ended) return;
+
+  // if the player is still alive we can blame them for it:
+  if (this.died - this.spawnAt < 10) {
+    unlockAchievement('quickdraw');
+  }
   game.incrementScore(1);
 };
 
@@ -1359,6 +1365,10 @@ var achievements = {
     name: 'Concussion',
     description: 'Feel the impact'
   },
+  quickdraw: {
+    name: 'Quick draw',
+    description: 'Kill an enemy within a few moments of it spawning'
+  },
   omnicide: {
     name: 'Omnicide',
     description: 'Kill every type of enemy in one game'
@@ -1494,7 +1504,6 @@ function Game() {
   };
 
   self.incrementScore = function(incr) {
-    if (self.ended) return;
     self.lastPointScoredAt = self.timeElapsed;
     self.score += incr;
     self.tether.pointsScoredSinceLastInteraction += incr;
