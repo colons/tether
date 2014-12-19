@@ -1880,16 +1880,18 @@ function Game() {
   };
 
   self.drawHighScore = function() {
-    draw({
-      type: 'text',
-      text: 'High score: ' + highScore.toString(),
-      fillStyle: fillStyle = rgbWithOpacity([0,0,0], 1),
-      fontSize: 15,
-      textPosition: {x: 6, y: height-1},
-      textAlign: 'left',
-      textBaseline: 'bottom',
-      fontFamily: 'Quantico'
-    });
+    if (highScore) {
+      draw({
+        type: 'text',
+        text: 'High score: ' + highScore.toString(),
+        fillStyle: fillStyle = rgbWithOpacity([0,0,0], 1),
+        fontSize: 15,
+        textPosition: {x: 6, y: height-1},
+        textAlign: 'left',
+        textBaseline: 'bottom',
+        fontFamily: 'Quantico'
+      });
+    }
   };
 
   self.drawInfo = function() {
