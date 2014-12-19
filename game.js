@@ -1409,7 +1409,6 @@ function syncSave(slug) {
       achievements[key].unlocked = new Date(parseInt(value, 10));
     } else if (key === highScoreCookieKey) {
       highScore = parseInt(value, 10);
-      console.log(highScore);
     }
   }
 }
