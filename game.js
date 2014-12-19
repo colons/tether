@@ -1925,7 +1925,6 @@ function Game() {
     self.tether.locked = true;
     self.tether.unlockable = false;
     self.setSpeed(self.slowSpeed);
-    ga('send', 'event', 'game', 'die', 'score', self.score);
   };
 
   self.reset(0);
