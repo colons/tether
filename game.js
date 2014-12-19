@@ -378,7 +378,6 @@ Mass.prototype = {
   visibleRadius: null,
   dashInterval: 1/8,
   extant: true,
-  becomeExtantOnBeat: null,  // so we can draw a warning
   walls: false,
   bounciness: 0,
   rgb: [60,60,60],
@@ -766,7 +765,7 @@ Enemy.prototype.die = function(playerDeservesAchievement) {
 Enemy.prototype.draw = function() {
   if (DEBUG && !this.died) this.drawTargetVector();
 
-  if ((!this.extant) && this.becomeExtantOnBeat !== null) {
+  if ((!this.extant)) {
     this.drawExtanceWarning();
   }
 
@@ -777,7 +776,6 @@ Enemy.prototype.drawExtanceWarning = function() {
   if (this.died) {
     return;
   }
-  var beatsRemaining = (music.timeSignature + (this.becomeExtantOnBeat - music.beat()));
   var timeRemaining = beatsRemaining / music.timeSignature;
 
   for (var i = 0; i <= 1; i += this.extanceWarningInterval) {
