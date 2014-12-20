@@ -14,5 +14,7 @@ fit for looping.
 
 ----
 
-Game code and music released under a Creative Commons [Attribution
-NonCommercial](http://creativecommons.org/licenses/by-nc/4.0/) license.
+Game code and music released under a Creative Commons
+[Attribution-NonCommercial][by-nc] license.
+
+[by-nc]: https://creativecommons.org/licenses/by-nc/4.0/
