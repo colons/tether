@@ -778,15 +778,13 @@ Enemy.prototype.die = function(playerDeservesAchievement) {
         unlockAchievement('omnicide');
       }
     }
+
+    if (this.died - this.spawnAt < 10) unlockAchievement('quickdraw');
   }
   this.explode();
   this.died = game.timeElapsed;
   if (game.ended) return;
 
-  // if the player is still alive we can blame them for it:
-  if (this.died - this.spawnAt < 10) {
-    unlockAchievement('quickdraw');
-  }
   game.incrementScore(1);
 };
 
