@@ -592,7 +592,6 @@ function Tether() {
     y: (height / 3) * 2
   });
 
-  this.lastMousePosition = {x: NaN, y: NaN};
   this.lastInteraction = null;
   this.pointsScoredSinceLastInteraction = 0;
 
@@ -601,20 +600,20 @@ function Tether() {
   document.addEventListener('mousemove', function(e) {
     self.lastInteraction = 'mouse';
     if (e.target === canvas) {
-      self.lastMousePosition = {x: e.layerX, y: e.layerY};
+      game.lastMousePosition = {x: e.layerX, y: e.layerY};
     }
   });
 
   document.addEventListener('touchend', function(e) {
     self.locked = true;
-    self.lastMousePosition = {x: NaN, y: NaN};
+    game.lastMousePosition = {x: NaN, y: NaN};
   });
 
   function handleTouch(e) {
     e.preventDefault();
     self.lastInteraction = 'touch';
     touch = e.changedTouches[0];
-    self.lastMousePosition = {x: touch.pageX, y: touch.pageY};
+    game.lastMousePosition = {x: touch.pageX, y: touch.pageY};
   }
 
   document.addEventListener('touchstart', handleTouch);
@@ -636,7 +635,7 @@ Tether.prototype.step = function() {
   if (this.lastInteraction === 'touch') leniency = 50;
   else leniency = 30;
 
-  if (this.unlockable && (vectorMagnitude(forXAndY([this.position, this.lastMousePosition], forXAndY.subtract)) < leniency)) {
+  if (this.unlockable && (vectorMagnitude(forXAndY([this.position, game.lastMousePosition], forXAndY.subtract)) < leniency)) {
     this.locked = false;
 
     if (!game.started) {
@@ -645,7 +644,7 @@ Tether.prototype.step = function() {
   }
 
   if (!this.locked) {
-    this.setPosition(this.lastMousePosition);
+    this.setPosition(game.lastMousePosition);
   } else {
     this.setPosition(this.position);
   }
@@ -1462,6 +1461,8 @@ function getLockedAchievements() {
 function Game() {
   var self = this;
 
+  self.lastMousePosition = {x: NaN, y: NaN};
+
   self.reset = function(waveIndex) {
     canvas.classList.remove('hidecursor');
 
@@ -1578,7 +1579,7 @@ function Game() {
       self.lastStepped = now;
     }
 
-    self.proximityToMuteButton = vectorMagnitude(forXAndY([muteButtonPosition, self.tether.lastMousePosition], forXAndY.subtract));
+    self.proximityToMuteButton = vectorMagnitude(forXAndY([muteButtonPosition, self.lastMousePosition], forXAndY.subtract));
     self.clickShouldMute = (!self.started && self.proximityToMuteButton < 30);
     self.background.step();
 
@@ -1865,10 +1866,10 @@ function Game() {
     var unlockedAchievements = getUnlockedAchievements();
     if (unlockedAchievements.length > 0) {
       var indicatedPosition = {x: 0, y: 0};
-      if (isNaN(game.tether.lastMousePosition.x)) {
+      if (isNaN(game.lastMousePosition.x)) {
         indicatedPosition = {x: 0, y: 0};
       } else {
-        indicatedPosition = game.tether.lastMousePosition;
+        indicatedPosition = game.lastMousePosition;
       }
       var distanceFromCorner = vectorMagnitude(lineDelta([indicatedPosition, {x: width, y: height}]));
       var distanceRange = [
@@ -1904,7 +1905,7 @@ function Game() {
 
       // the listing itself
       var heightNeeded = 500;
-      var fromBottom = (((game.tether.lastMousePosition.y - height ) / height) * heightNeeded) + 20;
+      var fromBottom = (((game.lastMousePosition.y - height ) / height) * heightNeeded) + 20;
       fromBottom = this.drawAchievements(getLockedAchievements(), fromBottom, 'Locked', rgbWithOpacity([0,0,0], listingOpacity * 0.5));
       this.drawAchievements(unlockedAchievements, fromBottom, 'Unlocked', rgbWithOpacity([0,0,0], listingOpacity));
     }
