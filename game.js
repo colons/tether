@@ -1911,7 +1911,7 @@ function Game() {
     if (!self.clickShouldMute && music.element.paused) {
       xNoise = (Math.random() - 0.5) * (500/self.proximityToMuteButton);
       yNoise = (Math.random() - 0.5) * (500/self.proximityToMuteButton);
-      visiblePosition = {x: xNoise + muteButtonPosition.x, y: yNoise + muteButtonPosition.y + Math.sin(self.timeElapsed / 10) * 3};
+      visiblePosition = {x: xNoise + muteButtonPosition.x, y: yNoise + muteButtonPosition.y + Math.sin(new Date().getTime() / 250) * 3};
     } else {
       visiblePosition = {x: muteButtonPosition.x, y: muteButtonPosition.y};
     }
