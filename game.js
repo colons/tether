@@ -14,7 +14,9 @@ var DEBUG = (window.location.hash === '#DEBUG'),
     maximumPossibleDistanceBetweenTwoMasses,
     cookieSuffix = '; max-age=' + (60*60*24*365).toString(),
     highScore = 0,
-    highScoreCookieKey = 'tetherHighScore';
+    highScoreCookieKey = 'tetherHighScore',
+    musicMutedCookieKey = 'tetherMusicMuted',
+    shouldUnmuteImmediately = false;
 
 
 /* UTILITIES */
@@ -343,6 +345,8 @@ function Music() {
   }
 
   self.timeSignature = 4;
+
+  if (shouldUnmuteImmediately) self.element.play();
 }
 Music.prototype = {
   bpm: 90,
@@ -1435,6 +1439,8 @@ function syncSave(slug) {
       achievements[key].unlocked = new Date(parseInt(value, 10));
     } else if (key === highScoreCookieKey) {
       highScore = parseInt(value, 10);
+    } else if (key === musicMutedCookieKey && value === 'true') {
+      shouldUnmuteImmediately = true;
     }
   }
 }
@@ -1947,7 +1953,10 @@ function Game() {
     }
 
     // compensate for the mute button being narrower than the unmute button
-    if (!music.element.paused) visiblePosition.x = visiblePosition.x - 5;
+    if (!music.element.paused) {
+      visiblePosition.x = visiblePosition.x - 5;
+      visiblePosition.y = visiblePosition.y - 2;
+    }
 
     var opacity = 1;
 
@@ -2052,8 +2061,10 @@ function handleClick(e) {
   if (game.eventShouldMute(e)) {
     if (music.element.paused) {
       music.element.play();
+      saveCookie(musicMutedCookieKey, 'true');
     } else {
       music.element.pause();
+      saveCookie(musicMutedCookieKey, 'false');
     }
   } else if (game.ended) {
     game.reset(0);
