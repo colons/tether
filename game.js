@@ -1899,7 +1899,16 @@ function Game() {
   };
 
   self.eventShouldMute = function(e) {
-    return self.positionShouldMute({x: e.layerX, y: e.layerY});
+    var position;
+
+    if (e.changedTouches) {
+      var touch = e.changedTouches[0];
+      position = {x: touch.pageX, y: touch.pageY};
+    } else {
+      position = {x: e.layerX, y: e.layerY};
+    }
+
+    return self.positionShouldMute(position);
   };
 
   self.positionShouldMute = function(position) {
