@@ -10,6 +10,7 @@ var DEBUG = (window.location.hash === '#DEBUG'),
     width,
     height,
     muteButtonPosition,
+    muteButtonProximityThreshold = 30,
     maximumPossibleDistanceBetweenTwoMasses,
     cookieSuffix = '; max-age=' + (60*60*24*365).toString(),
     highScore = 0,
@@ -1584,7 +1585,7 @@ function Game() {
     } else {
       self.proximityToMuteButton = vectorMagnitude(forXAndY([muteButtonPosition, self.lastMousePosition], forXAndY.subtract));
     }
-    self.clickShouldMute = ((!self.started || self.ended) && self.proximityToMuteButton < 30);
+    self.clickShouldMute = ((!self.started || self.ended) && self.proximityToMuteButton < muteButtonProximityThreshold);
     if (self.clickShouldMute !== canvas.classList.contains('buttonhover')) canvas.classList.toggle('buttonhover');
 
     self.background.step();
@@ -1929,6 +1930,15 @@ function Game() {
     }
   };
 
+  self.eventShouldMute = function(e) {
+    return self.positionShouldMute({x: e.layerX, y: e.layerY});
+  };
+
+  self.positionShouldMute = function(position) {
+    self.proximityToMuteButton = vectorMagnitude(forXAndY([muteButtonPosition, position], forXAndY.subtract));
+    return ((!self.started || self.ended) && self.proximityToMuteButton < muteButtonProximityThreshold);
+  };
+
   self.drawMuteButton = function() {
     if (!self.clickShouldMute && music.element.paused) {
       xNoise = (Math.random() - 0.5) * (500/self.proximityToMuteButton);
@@ -2041,7 +2051,7 @@ music = new Music();
 game = new Game();
 
 function handleClick(e) {
-  if (game.clickShouldMute) {
+  if (game.eventShouldMute(e)) {
     if (music.element.paused) {
       music.element.play();
     } else {
