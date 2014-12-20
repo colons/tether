@@ -386,7 +386,6 @@ Mass.prototype = {
   radius: 0,
   visibleRadius: null,
   dashInterval: 1/8,
-  extant: true,
   walls: false,
   bounciness: 0,
   rgb: [60,60,60],
@@ -463,9 +462,6 @@ Mass.prototype = {
     var opacity;
     if (!this.died) opacity = 1;
     else opacity = 1 / Math.max(1, (game.timeElapsed - this.died));
-
-    if (!this.extant && !this.died) opacity *= 0.1;
-
     return opacity;
   },
 
@@ -733,9 +729,6 @@ function Enemy(opts) {
   this.exhausts = [];
   this.spawned = false;
 
-  this.extant = true;  // can die and kill
-  this.extanceWarningInterval = 1/5;
-
   this.spawnAt = opts.spawnAt;
   this.wave = opts.wave;
   this.target = this.getTarget();
@@ -795,36 +788,7 @@ Enemy.prototype.die = function(playerDeservesAchievement) {
 Enemy.prototype.draw = function() {
   if (DEBUG && !this.died) this.drawTargetVector();
 
-  if ((!this.extant)) {
-    this.drawExtanceWarning();
-  }
-
   Mass.prototype.draw.call(this);
-};
-
-Enemy.prototype.drawExtanceWarning = function() {
-  if (this.died) {
-    return;
-  }
-  var timeRemaining = beatsRemaining / music.timeSignature;
-
-  for (var i = 0; i <= 1; i += this.extanceWarningInterval) {
-    // we add a big number to timeElapsed to prevent these looking less random at the start of a game
-    var baseAngle = ((game.timeElapsed + (this.seed * 1000))/(100*i)) + (i * Math.PI*2) + 0.2 * ((0.5 - i) * timeRemaining);
-    var targetLineWidth = (this.radius * this.extanceWarningInterval) + 2;
-    var expansion = (Math.PI * 2 * Math.pow(1 - timeRemaining, 4));
-
-    draw({
-      type: 'arc',
-      stroke: true,
-      strokeStyle: rgbWithOpacity(this.rgb, 1 - timeRemaining),
-      lineWidth: targetLineWidth * (1 - timeRemaining),
-      arcCenter: this.position,
-      arcStart: baseAngle - expansion,
-      arcFinish: baseAngle + expansion,
-      arcRadius: (this.radius * i) * (1 + Math.pow(200 * (i * timeRemaining), 1/2))
-    });
-  }
 };
 
 Enemy.prototype.drawTargetVector = function() {
@@ -1615,7 +1579,7 @@ function Game() {
     for (var i = 0; i < self.wave.enemies.length; i++) {
       var enemy = self.wave.enemies[i];
 
-      if (enemy.died || !enemy.spawned || !enemy.extant) {
+      if (enemy.died || !enemy.spawned) {
         continue;
       }
 
@@ -1649,7 +1613,7 @@ function Game() {
     for (var i = 0; i < self.wave.enemies.length; i++) {
       var enemy = self.wave.enemies[i];
 
-      if (enemy.died || !enemy.spawned || !enemy.extant) {
+      if (enemy.died || !enemy.spawned) {
         continue;
       }
 
