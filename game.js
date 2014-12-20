@@ -295,7 +295,7 @@ function scaleCanvas(ratio) {
 function initCanvas() {
   width = window.innerWidth;
   height = window.innerHeight;
-  muteButtonPosition = {x: width/2, y: height-30};
+  muteButtonPosition = {x: 32, y: height-25};
 
   maximumPossibleDistanceBetweenTwoMasses = vectorMagnitude({x: width, y: height});
 
@@ -1579,10 +1579,15 @@ function Game() {
       self.lastStepped = now;
     }
 
-    self.proximityToMuteButton = vectorMagnitude(forXAndY([muteButtonPosition, self.lastMousePosition], forXAndY.subtract));
-    self.clickShouldMute = (!self.started && self.proximityToMuteButton < 30);
-    self.background.step();
+    if (isNaN(self.lastMousePosition.x)) {
+      self.proximityToMuteButton = maximumPossibleDistanceBetweenTwoMasses;
+    } else {
+      self.proximityToMuteButton = vectorMagnitude(forXAndY([muteButtonPosition, self.lastMousePosition], forXAndY.subtract));
+    }
+    self.clickShouldMute = ((!self.started || self.ended) && self.proximityToMuteButton < 30);
+    if (self.clickShouldMute !== canvas.classList.contains('buttonhover')) canvas.classList.toggle('buttonhover');
 
+    self.background.step();
     self.tether.step();
     self.player.step();
 
@@ -1896,6 +1901,19 @@ function Game() {
         fontFamily: 'Quantico'
       });
 
+      if (highScore) {
+        draw({
+          type: 'text',
+          text: 'Best: ' + highScore.toString(),
+          fillStyle: fillStyle = rgbWithOpacity([0,0,0], hintOpacity),
+          fontSize: 16,
+          textPosition: {x: width-6, y: height-20},
+          textAlign: 'right',
+          textBaseline: 'bottom',
+          fontFamily: 'Quantico'
+        });
+      }
+
       // the background that makes the listing readable
       draw({
         type: 'rect',
@@ -1911,29 +1929,17 @@ function Game() {
     }
   };
 
-  self.drawHighScore = function() {
-    if (highScore) {
-      draw({
-        type: 'text',
-        text: 'Best: ' + highScore.toString(),
-        fillStyle: fillStyle = rgbWithOpacity([0,0,0], 1),
-        fontSize: 16,
-        textPosition: {x: 6, y: height-1},
-        textAlign: 'left',
-        textBaseline: 'bottom',
-        fontFamily: 'Quantico'
-      });
-    }
-  };
-
   self.drawMuteButton = function() {
     if (!self.clickShouldMute && music.element.paused) {
       xNoise = (Math.random() - 0.5) * (500/self.proximityToMuteButton);
       yNoise = (Math.random() - 0.5) * (500/self.proximityToMuteButton);
       visiblePosition = {x: xNoise + muteButtonPosition.x, y: yNoise + muteButtonPosition.y};
     } else {
-      visiblePosition = muteButtonPosition;
+      visiblePosition = {x: muteButtonPosition.x, y: muteButtonPosition.y};
     }
+
+    // compensate for the mute button being narrower than the unmute button
+    if (!music.element.paused) visiblePosition.x = visiblePosition.x - 5;
 
     var opacity = 1;
 
@@ -2000,8 +2006,7 @@ function Game() {
 
     self.drawAchievementNotifications();
 
-    if (!self.started || self.ended) self.drawHighScore();
-    if (!self.started) self.drawMuteButton();
+    if (!self.started || self.ended) self.drawMuteButton();
 
     // we shouldn't draw the achievement UI on touch screens until the player
     // has explicitly requested a return to the title screen it's horribly
@@ -2035,7 +2040,7 @@ syncSave();
 music = new Music();
 game = new Game();
 
-function restartGameIfEnded(e) {
+function handleClick(e) {
   if (game.clickShouldMute) {
     if (music.element.paused) {
       music.element.play();
@@ -2047,8 +2052,8 @@ function restartGameIfEnded(e) {
   }
 }
 
-document.addEventListener('mousedown', restartGameIfEnded);
-document.addEventListener('touchstart', restartGameIfEnded);
+document.addEventListener('mousedown', handleClick);
+document.addEventListener('touchstart', handleClick);
 
 // http://www.paulirish.com/2011/requestanimationframe-for-smart-animating/
 window.requestFrame = (
