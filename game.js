@@ -910,7 +910,7 @@ Drifter.prototype.bounceCallback = function() {
 function Idiot(opts) {
   Enemy.call(this, opts);
 
-  var size = opts.size || 0.5 + Math.random();
+  var size = opts.size || 0.75 + Math.random() / 1.5;
 
   // make it slower on smaller screens
   this.mass = size * (1500/maximumPossibleDistanceBetweenTwoMasses);
