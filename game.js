@@ -295,7 +295,7 @@ function scaleCanvas(ratio) {
 function initCanvas() {
   width = window.innerWidth;
   height = window.innerHeight;
-  muteButtonPosition = {x: 32, y: height-25};
+  muteButtonPosition = {x: 32, y: height-28};
 
   maximumPossibleDistanceBetweenTwoMasses = vectorMagnitude({x: width, y: height});
 
@@ -1933,7 +1933,7 @@ function Game() {
     if (!self.clickShouldMute && music.element.paused) {
       xNoise = (Math.random() - 0.5) * (500/self.proximityToMuteButton);
       yNoise = (Math.random() - 0.5) * (500/self.proximityToMuteButton);
-      visiblePosition = {x: xNoise + muteButtonPosition.x, y: yNoise + muteButtonPosition.y};
+      visiblePosition = {x: xNoise + muteButtonPosition.x, y: yNoise + muteButtonPosition.y + Math.sin(self.timeElapsed / 10) * 3};
     } else {
       visiblePosition = {x: muteButtonPosition.x, y: muteButtonPosition.y};
     }
