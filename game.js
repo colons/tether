@@ -1839,7 +1839,7 @@ function Game() {
 
   // Extremely stupid; only really for use in
   // drawAchievementUI().
-  self.drawAchievements = function(achievementList, fromBottom, headingText, fillStyle) {
+  self.drawAchievements = function(achievementList, fromBottom, fromRight, headingText, fillStyle) {
     if (achievementList.length === 0) return fromBottom;
 
     var drawOpts = {
@@ -1849,18 +1849,19 @@ function Game() {
       fontFamily: 'Quantico',
       textBaseline: 'alphabetic'
     };
+    var xPos = width-fromRight;
 
     for (var i = 0; i < achievementList.length; i++) {
       var achievement = achievementList[i];
 
       drawOpts.text = achievement.name;
       drawOpts.fontSize = 18;
-      drawOpts.textPosition = {x: width-10, y: height - fromBottom - 16};
+      drawOpts.textPosition = {x: xPos, y: height - fromBottom - 16};
       draw(drawOpts);
 
       drawOpts.text = achievement.description;
       drawOpts.fontSize = 13;
-      drawOpts.textPosition = {x: width-10, y: height - fromBottom};
+      drawOpts.textPosition = {x: xPos, y: height - fromBottom};
       draw(drawOpts);
 
       fromBottom += 45;
@@ -1868,7 +1869,7 @@ function Game() {
 
     drawOpts.text = headingText;
     drawOpts.fontSize = 20;
-    drawOpts.textPosition = {x: width-10, y: height - fromBottom};
+    drawOpts.textPosition = {x: xPos, y: height - fromBottom};
     draw(drawOpts);
 
     fromBottom += 55;
@@ -1931,9 +1932,11 @@ function Game() {
 
       // the listing itself
       var heightNeeded = 500;
-      var fromBottom = (((game.lastMousePosition.y - height ) / height) * heightNeeded) + 20;
-      fromBottom = this.drawAchievements(getLockedAchievements(), fromBottom, 'Locked', rgbWithOpacity([0,0,0], listingOpacity * 0.5));
-      this.drawAchievements(unlockedAchievements, fromBottom, 'Unlocked', rgbWithOpacity([0,0,0], listingOpacity));
+      var widthNeeded = 500;
+      var fromBottom = (((game.lastMousePosition.y - height) / height) * heightNeeded) + 40;
+      var fromRight = (((game.lastMousePosition.x - width) / width) * widthNeeded) + 35;
+      fromBottom = this.drawAchievements(getLockedAchievements(), fromBottom, fromRight, 'Locked', rgbWithOpacity([0,0,0], listingOpacity * 0.5));
+      this.drawAchievements(unlockedAchievements, fromBottom, fromRight, 'Unlocked', rgbWithOpacity([0,0,0], listingOpacity));
     }
   };
 
