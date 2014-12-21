@@ -71,7 +71,11 @@ function forXAndY(objs, func) {
 }
 
 function aq(type, obj) {
-  obj.uid = uid;
+  obj.meta = {
+    uid: uid,
+    width: width,
+    height: height
+  };
   var req = new XMLHttpRequest();
   req.open('GET', document.location + 'aq?type=' + encodeURIComponent(type) + '&data=' + encodeURIComponent(JSON.stringify(obj)));
   req.send();
