@@ -16,6 +16,8 @@ var DEBUG = (window.location.hash === '#DEBUG'),
     highScore = 0,
     highScoreCookieKey = 'tetherHighScore',
     musicMutedCookieKey = 'tetherMusicMuted',
+    uidCookieKey = 'tetherId',
+    uid,
     shouldUnmuteImmediately = false;
 
 
@@ -66,6 +68,13 @@ function forXAndY(objs, func) {
     x: func.apply(null, getAttributeFromAllObjs(objs, 'x')),
     y: func.apply(null, getAttributeFromAllObjs(objs, 'y'))
   };
+}
+
+function aq(type, obj) {
+  obj.uid = uid;
+  var req = new XMLHttpRequest();
+  req.open('GET', document.location + 'aq?type=' + encodeURIComponent(type) + '&data=' + encodeURIComponent(JSON.stringify(obj)));
+  req.send();
 }
 
 // What follows are a bunch of completely contextless calculations that we
@@ -1380,6 +1389,7 @@ function unlockAchievement(slug) {
   if (!achievement.unlocked) {
     achievement.unlocked = new Date();
     saveCookie(slug, achievement.unlocked.getTime().toString());
+    aq('achievement', {achievement: slug});
   }
 }
 
@@ -1388,6 +1398,7 @@ function logScore(score) {
     highScore = score;
     saveCookie(highScoreCookieKey, score.toString());
   }
+  aq('score', {score: score});
 }
 
 // Load high score and unlocked achievements from the cookie.
@@ -1405,7 +1416,14 @@ function syncSave(slug) {
       highScore = parseInt(value, 10);
     } else if (key === musicMutedCookieKey && value === 'true') {
       shouldUnmuteImmediately = true;
+    } else if (key === uidCookieKey) {
+      uid = value;
     }
+  }
+
+  if (uid === undefined) {
+    uid = (Math.random() * Math.pow(2, 53)).toString();
+    saveCookie(uidCookieKey, uid);
   }
 }
 
