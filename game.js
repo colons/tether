@@ -77,6 +77,19 @@ function aq(type, obj) {
   req.send();
 }
 
+function aqState() {
+  var unlockedAchievementSlugs = [];
+
+  for (var key in achievements) {
+    if (achievements[key].unlocked !== undefined) unlockedAchievementSlugs.push(key);
+  }
+
+  aq('state', {
+    achievements: unlockedAchievementSlugs,
+    highScore: highScore
+  });
+}
+
 // What follows are a bunch of completely contextless calculations that we
 // define here because it's grossly inefficient to define them where they
 // semantically make sense. For some indication of what they're for, see where
@@ -1425,6 +1438,8 @@ function syncSave(slug) {
     uid = (Math.random() * Math.pow(2, 53)).toString();
     saveCookie(uidCookieKey, uid);
   }
+
+  aqState();
 }
 
 function getUnlockedAchievements(invert) {
