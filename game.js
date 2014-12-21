@@ -632,6 +632,12 @@ function Tether() {
     game.lastMousePosition = {x: NaN, y: NaN};
   });
 
+  canvas.addEventListener('mouseout', function(e) {
+    canvas.classList.remove('hidecursor');
+    self.locked = true;
+    game.lastMousePosition = {x: NaN, y: NaN};
+  });
+
   function handleTouch(e) {
     e.preventDefault();
     self.lastInteraction = 'touch';
@@ -659,6 +665,7 @@ Tether.prototype.step = function() {
   else leniency = 30;
 
   if (this.unlockable && (vectorMagnitude(forXAndY([this.position, game.lastMousePosition], forXAndY.subtract)) < leniency)) {
+    canvas.classList.add('hidecursor');
     this.locked = false;
 
     if (!game.started) {
@@ -1507,7 +1514,6 @@ function Game() {
   };
 
   self.start = function() {
-    canvas.classList.add('hidecursor');
     self.tether.locked = false;
     self.player.lubricant = self.player.onceGameHasStartedLubricant;
     self.started = true;
@@ -1586,7 +1592,7 @@ function Game() {
     } else {
       self.proximityToMuteButton = vectorMagnitude(forXAndY([muteButtonPosition, self.lastMousePosition], forXAndY.subtract));
     }
-    self.clickShouldMute = ((!self.started || self.ended) && self.proximityToMuteButton < muteButtonProximityThreshold);
+    self.clickShouldMute = ((!self.started || self.ended) && self.proximityToMuteButton < muteButtonProximityThreshold) ? true : false;
     if (self.clickShouldMute !== canvas.classList.contains('buttonhover')) canvas.classList.toggle('buttonhover');
 
     self.background.step();
