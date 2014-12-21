@@ -798,7 +798,7 @@ Enemy.prototype.die = function(playerDeservesAchievement) {
       }
     }
 
-    if (this.died - this.spawnAt < 10) unlockAchievement('quickdraw');
+    if (this.died - this.spawnAt < 5) unlockAchievement('quickdraw');
   }
   this.explode();
   this.died = game.timeElapsed;
