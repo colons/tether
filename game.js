@@ -2127,4 +2127,12 @@ function animate() {
   game.step();
 }
 
+// mostly for ios (which starts with the window scrolled down a little somehow):
+var scrollTimeout;
+window.addEventListener('scroll', function(e) {
+  clearTimeout(scrollTimeout);
+  scrollTimeout = setTimeout(function() {window.scrollTo(0, 0);}, 500);
+});
+window.scrollTo(0, 0);
+
 animate();
