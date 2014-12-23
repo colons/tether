@@ -56,6 +56,15 @@ function somewhereJustOutsideTheViewport(buffer) {
   return somewhere;
 }
 
+function closestWithinViewport(position) {
+  // return the closest position to the provided position that still falls
+  // within the viewport
+  var newPos = {x: position.x, y: position.y};
+  newPos = forXAndY([newPos, {x: 0, y: 0}], forXAndY.theGreater);
+  newPos = forXAndY([newPos, {x: width, y: height}], forXAndY.theLesser);
+  return newPos;
+}
+
 function getAttributeFromAllObjs(objs, attr) {
   var attrs = [];
   for (var i = 0; i < objs.length; i++) {
@@ -103,6 +112,8 @@ forXAndY.aPlusHalfB = function(a, b) {return a + (b * 5);};
 forXAndY.aPlusBTimesSpeed = function(a, b) {return a + (b * game.timeDelta);};
 forXAndY.subtract = function(a, b) {return a - b;};
 forXAndY.invSubtract = function(a, b) {return b - a;};
+forXAndY.theGreater = function(a, b) {return (a > b) ? a : b;};
+forXAndY.theLesser = function(a, b) {return (a < b) ? a : b;};
 forXAndY.add = function() {
   var s = 0;
   for (var i = 0; i < arguments.length; i++) s += arguments[i];
@@ -679,7 +690,7 @@ Tether.prototype.step = function() {
   }
 
   if (!this.locked) {
-    this.setPosition(game.lastMousePosition);
+    this.setPosition(closestWithinViewport(game.lastMousePosition));
   } else {
     this.setPosition(this.position);
   }
