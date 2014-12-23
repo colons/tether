@@ -16,6 +16,7 @@ var DEBUG = (window.location.hash === '#DEBUG'),
     highScore = 0,
     highScoreCookieKey = 'tetherHighScore',
     musicMutedCookieKey = 'tetherMusicMuted',
+    lastTouchStart,
     uidCookieKey = 'tetherId',
     uid,
     shouldUnmuteImmediately = false;
@@ -2090,8 +2091,18 @@ function handleClick(e) {
   }
 }
 
-document.addEventListener('mousedown', handleClick);
-document.addEventListener('touchstart', handleClick);
+document.addEventListener('click', handleClick);
+
+// custom click handler for taps, because click never gets fired due to us
+// calling preventDefault() on all touch events:
+document.addEventListener('touchstart', function(e) {
+  lastTouchStart = new Date().getTime();
+});
+document.addEventListener('touchend', function(e) {
+  if ((lastTouchStart !== undefined) && (new Date().getTime() - lastTouchStart) < 300) {
+    handleClick(e);
+  }
+});
 
 // http://www.paulirish.com/2011/requestanimationframe-for-smart-animating/
 window.requestFrame = (
