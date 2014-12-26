@@ -12,14 +12,17 @@ var DEBUG = (window.location.hash === '#DEBUG'),
     muteButtonPosition,
     muteButtonProximityThreshold = 30,
     maximumPossibleDistanceBetweenTwoMasses,
-    cookieSuffix = '; max-age=' + (60*60*24*365*50).toString(),
     highScore = 0,
     highScoreCookieKey = 'tetherHighScore',
     musicMutedCookieKey = 'tetherMusicMuted',
     lastTouchStart,
     uidCookieKey = 'tetherId',
     uid,
-    shouldUnmuteImmediately = false;
+    shouldUnmuteImmediately = false,
+    cookieExpiryDate = new Date();
+
+cookieExpiryDate.setFullYear(cookieExpiryDate.getFullYear() + 50);
+var cookieSuffix = '; expires=' + cookieExpiryDate.toUTCString();
 
 
 /* UTILITIES */
