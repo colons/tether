@@ -783,7 +783,6 @@ function Enemy(opts) {
 }
 extend(Mass, Enemy);
 
-// get the array of targets that this enemy can choose from
 Enemy.prototype.getTarget = function() {
   return game.player;
 };
