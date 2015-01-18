@@ -9,6 +9,9 @@ parser = Parser("%h %l %u %t \"%r\" %>s %O \"%{Referer}i\" \"%{User-Agent}i\"")
 
 
 class User(object):
+    def __str__(self):
+        return self.uid
+
     def __init__(self):
         self.sizes = set()
         self.achievements = set()
@@ -78,8 +81,14 @@ HOSTS = defaultdict(set)
 
 def print_statistics():
     print '{} unique UIDs generated from {} different hosts'.format(
-        len(UIDS), len(HOSTS)
+        len(UIDS), len(HOSTS),
     )
+
+    print 'highest scores:'
+    print '\n'.join([
+        '  {u}: {highscore}'.format(u=u, **u.__dict__) for u in
+        sorted(UIDS.itervalues(), key=lambda u: u.highscore, reverse=True)[:10]
+    ])
 
 
 if __name__ == '__main__':
