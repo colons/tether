@@ -18,7 +18,9 @@ class User(object):
         self.highscore = 0
 
     def note_meta(self, meta):
-        self.sizes.add((meta['width'], meta['height']))
+        size = (meta['width'], meta['height'])
+        if size != (None, None):
+            self.sizes.add(size)
 
     def note_state(self, data):
         if data['highScore'] < self.highscore:
@@ -86,7 +88,13 @@ def print_statistics():
 
     print 'highest scores:'
     print '\n'.join([
-        '  {u}: {highscore}'.format(u=u, **u.__dict__) for u in
+        '  {u}: {highscore} {sizes}'.format(
+            u=u,
+            sizes=', '.join([
+                'x'.join([str(i) for i in xy]) for xy in u.sizes
+            ]),
+            highscore=u.highscore,
+        ) for u in
         sorted(UIDS.itervalues(), key=lambda u: u.highscore, reverse=True)[:10]
     ])
 
