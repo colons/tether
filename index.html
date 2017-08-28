@@ -8,7 +8,7 @@
   detail on licensing stuff and development history.
 
 -->
-<html>
+<html manifest="tether.manifest">
   <head>
     <title>tether</title>
     <meta name="description" content="A game about swinging a ball around.">
@@ -17,9 +17,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <meta name="apple-mobile-web-app-capable" content="yes"/>
     <link rel="apple-touch-icon" href="icon.png"/>
-    <link href="https://fonts.googleapis.com/css?family=Tulpen+One%7CQuantico:400,700" rel="stylesheet" type="text/css"/>
-    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="fa/font-awesome.min.css" rel="stylesheet">
     <style>
+      @font-face {
+        font-family: 'Quantico';
+        font-style: normal;
+        font-weight: 400;
+        src: local('Quantico'), local('Quantico-Regular'), url(fonts/Quantico-Regular.woff2) format('woff2');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215;
+      }
+
+      @font-face {
+        font-family: 'Quantico';
+        font-style: normal;
+        font-weight: 700;
+        src: local('Quantico-Bold'), url(fonts/Quantico-Bold.woff2) format('woff2');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215;
+      }
+
+      @font-face {
+        font-family: 'Tulpen One';
+        font-style: normal;
+        font-weight: 400;
+        src: local('Tulpen One'), local('TulpenOne-Regular'), url(fonts/TulpenOne-Regular.woff2) format('woff2');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215;
+      }
+
       * {
         margin: 0;
         padding: 0;
