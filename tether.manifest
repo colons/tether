@@ -1,0 +1,13 @@
+CACHE MANIFEST
+# two
+icon.png
+fonts/fontawesome-webfont.woff
+fonts/Quantico-Bold.woff2
+fonts/Quantico-Regular.woff2
+fonts/TulpenOne-Regular.woff2
+fa/font-awesome.min.css
+game.js
+bgm.mp3
+
+NETWORK:
+aq
