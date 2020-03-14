@@ -661,7 +661,7 @@ function Tether() {
     e.preventDefault();
     self.lastInteraction = 'touch';
     touch = e.changedTouches[0];
-    game.lastMousePosition = {x: touch.pageX, y: touch.pageY};
+    game.lastMousePosition = {x: touch.clientX, y: touch.clientY};
   }
 
   document.addEventListener('touchstart', handleTouch);
