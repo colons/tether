@@ -1152,11 +1152,15 @@ FireParticle.prototype.rgbForIntensity = function(intensity) {
 FireParticle.prototype.draw = function() {
   if (Math.random() < 0.1 * game.timeDelta) return; // flicker
 
+  var timeAlive = game.timeElapsed - this.created;
+  var maturity = (1 - (1/(timeAlive/3 + 1)));
+  var velocityButSmallerWhenYoung = forXAndY([this.velocity, {x: maturity, y: maturity}], forXAndY.multiply);
+
   draw({
     type: 'line',
     stroke: true,
     strokeStyle: this.getCurrentColor(),
-    linePaths: [[this.position, forXAndY([this.position, this.velocity], forXAndY.aPlusHalfB)]]
+    linePaths: [[this.position, forXAndY([this.position, velocityButSmallerWhenYoung], forXAndY.aPlusHalfB)]]
   });
 };
 
